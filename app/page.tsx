@@ -116,6 +116,43 @@ function InvoiceEditor({ lead, mode, setMode, close, openStage, toast }: { lead:
   </div>;
 }
 
+function ReportsPanel({ leads, toast }: { leads: Lead[]; toast: (message: string) => void }) {
+  const [period, setPeriod] = useState<"Weekly" | "Monthly" | "Quarterly" | "Annual">("Monthly");
+  const [year, setYear] = useState("2026-27");
+  const reportLeads = year === "2026-27" ? leads : [];
+  const proposalLeads = reportLeads.filter(l => l.status === "Proposal Sent" || l.status === "Converted");
+  const projectLeads = reportLeads.filter(l => l.status === "Converted");
+  const leadToProposal = reportLeads.length ? proposalLeads.length / reportLeads.length * 100 : 0;
+  const leadToProject = reportLeads.length ? projectLeads.length / reportLeads.length * 100 : 0;
+  const pipelineValue = proposalLeads.reduce((sum, l) => sum + l.value, 0);
+  const wonValue = projectLeads.reduce((sum, l) => sum + l.value, 0);
+  const today = reportLeads.filter(l => /21[-/]07[-/]2026|21 July 2026/i.test(`${l.lastAction} ${l.age}`));
+  const calls = today.filter(l => /call|phone|vcall/i.test(l.lastAction)).length;
+  const visits = today.filter(l => /visit|gemba/i.test(l.lastAction)).length;
+  const proposalsToday = today.filter(l => l.status === "Proposal Sent" || /proposal/i.test(l.lastAction)).length;
+  const newLeads = today.filter(l => l.status === "Lead Received").length;
+  const label = period === "Weekly" ? "15-21 Jul 2026" : period === "Monthly" ? "July 2026" : period === "Quarterly" ? "Q2 · Jul-Sep 2026" : `FY ${year}`;
+  const statuses = [
+    ["Lead received", reportLeads.filter(l => l.status === "Lead Received").length, "#5e7c8c"],
+    ["Engaged", reportLeads.filter(l => l.status === "Engagement Initiated").length, "#e6a33d"],
+    ["Proposal sent", reportLeads.filter(l => l.status === "Proposal Sent").length, "#d88a35"],
+    ["Converted", projectLeads.length, "#78a86a"],
+    ["On hold", reportLeads.filter(l => l.status === "On Hold").length, "#b6a36b"],
+  ] as const;
+  const maxStatus = Math.max(1, ...statuses.map(x => x[1]));
+  const digest = `*Solutions Optispace - Daily CRM Report*\n21 July 2026 · 6:00 PM\n\n*Today's work done*\nCalls completed: ${calls}\nFirst visits / Gemba: ${visits}\nProposals sent: ${proposalsToday}\nNew leads received: ${newLeads}\nActivities logged: ${today.length}\n\n*Current dashboard*\nTotal leads: ${reportLeads.length}\nEngagement initiated: ${statuses[1][1]}\nProposal sent: ${statuses[2][1]}\nConverted projects: ${projectLeads.length}\nOn hold: ${statuses[4][1]}\n\nLead to proposal: ${leadToProposal.toFixed(1)}%\nLead to project: ${leadToProject.toFixed(1)}%\nOpen proposal value: ${money(pipelineValue)}\nConverted value: ${money(wonValue)}`;
+  const sendWhatsApp = () => { window.open(`https://wa.me/917666258956?text=${encodeURIComponent(digest)}`, "_blank", "noopener,noreferrer"); toast("Daily report prepared in WhatsApp for +91 7666258956."); };
+  return <div className="reports-page">
+    <header className="reports-head"><div><span className="eyebrow">PERFORMANCE INTELLIGENCE</span><h2>Sales & project reports</h2><p>Track the complete journey from lead receipt to proposal and converted project.</p></div><div className="report-controls"><label>Period<select value={period} onChange={e => setPeriod(e.target.value as typeof period)}><option>Weekly</option><option>Monthly</option><option>Quarterly</option><option>Annual</option></select></label><label>Financial year<select value={year} onChange={e => setYear(e.target.value)}><option>2026-27</option><option>2025-26</option><option>2024-25</option></select></label></div></header>
+    <div className="report-period"><span>{period} report</span><b>{label}</b><small>Financial year {year}</small></div>
+    <section className="report-kpis"><article><small>TOTAL LEADS</small><strong>{reportLeads.length}</strong><span>Enquiries in selected year</span></article><article className="accent"><small>LEAD → PROPOSAL</small><strong>{leadToProposal.toFixed(1)}%</strong><span>{proposalLeads.length} of {reportLeads.length} leads</span></article><article className="success"><small>LEAD → PROJECT</small><strong>{leadToProject.toFixed(1)}%</strong><span>{projectLeads.length} converted projects</span></article><article><small>CONVERTED VALUE</small><strong>{money(wonValue)}</strong><span>Proposal value won</span></article></section>
+    <section className="reports-grid"><article className="panel report-funnel"><div className="panel-head"><div><span className="eyebrow">CONVERSION FUNNEL</span><h2>Lead journey</h2></div><b>{label}</b></div><div className="funnel-bars">{statuses.map(([name, value, color]) => <div key={name}><span>{name}</span><i><em style={{ width: `${value / maxStatus * 100}%`, background: color }} /></i><b>{value}</b></div>)}</div><div className="ratio-row"><span><small>Proposal conversion</small><b>{leadToProposal.toFixed(1)}%</b></span><span><small>Project conversion</small><b>{leadToProject.toFixed(1)}%</b></span><span><small>Open proposal value</small><b>{money(pipelineValue)}</b></span></div></article>
+      <aside className="panel whatsapp-report"><div className="whatsapp-title"><i>◉</i><div><span className="eyebrow">DAILY WHATSAPP REPORT</span><h2>6:00 PM management digest</h2></div></div><div className="schedule-line"><span><small>RECIPIENT</small>+91 7666258956</span><span><small>SCHEDULE</small>Daily · 6:00 PM IST</span></div><div className="connection-warning"><b>Automatic delivery requires connection</b><span>Connect an approved WhatsApp Business/Cloud API account for hands-free scheduled sending.</span></div><pre>{digest}</pre><button className="whatsapp-send" onClick={sendWhatsApp}>Send today’s report on WhatsApp →</button></aside>
+    </section>
+    <section className="panel daily-breakdown"><div className="panel-head"><div><span className="eyebrow">TODAY · 21 JULY 2026</span><h2>Work completed today</h2></div><span>{today.length} recorded activities</span></div><div>{[["☎","Calls done",calls],["⌂","Visits / Gemba",visits],["▤","Proposals sent",proposalsToday],["＋","New leads",newLeads]].map(x => <article key={x[1]}><i>{x[0]}</i><strong>{x[2]}</strong><span>{x[1]}</span></article>)}</div></section>
+  </div>;
+}
+
 export default function Home() {
   const [active, setActive] = useState("Dashboard");
   const [query, setQuery] = useState("");
@@ -157,9 +194,9 @@ export default function Home() {
     </aside>
 
     <section className="content">
-      <header className="topbar"><div><p>Tuesday, 21 July 2026</p><h1>Good morning, Minish.</h1></div><div className="top-actions"><label className="search"><span>⌕</span><input aria-label="Search leads" placeholder="Search enquiry, company, contact…" value={query} onChange={e => setQuery(e.target.value)} /></label><button className="icon-button" aria-label="Notifications">♢<span /></button><button className="primary" onClick={() => setDrawer("lead")}>＋ Add lead</button></div></header>
+      <header className="topbar"><div><p>Tuesday, 21 July 2026</p><h1>Good morning, Minish.</h1></div><div className="top-actions"><label className="search"><span>⌕</span><input aria-label="Search leads" placeholder="Search enquiry, company, contact…" value={query} onChange={e => setQuery(e.target.value)} /></label><button className="daily-report-button" onClick={() => setActive("Reports")}>◉ Daily report · 6 PM</button><button className="icon-button" aria-label="Notifications">♢<span /></button><button className="primary" onClick={() => setDrawer("lead")}>＋ Add lead</button></div></header>
 
-      <div className="import-banner"><span>✓</span><div><b>{importMetadata.total} current leads imported</b><small>{importMetadata.source} · Synced {importMetadata.importedOn}</small></div><div><em>{counts.hold} on hold</em><em className="stop-count">{counts.stop} stopped</em></div></div>
+      {active === "Reports" ? <ReportsPanel leads={leads} toast={toast} /> : <><div className="import-banner"><span>✓</span><div><b>{importMetadata.total} current leads imported</b><small>{importMetadata.source} · Synced {importMetadata.importedOn}</small></div><div><em>{counts.hold} on hold</em><em className="stop-count">{counts.stop} stopped</em></div></div>
 
       <section className="phase-grid">
         {[
@@ -190,6 +227,7 @@ export default function Home() {
         <div className="table-wrap"><table><thead><tr><th>ENQUIRY</th><th>ACCOUNT / CONTACT</th><th>PROJECT</th><th>BUA</th><th>STATUS</th><th>LAST ACTION</th><th>NEXT ACTION</th><th /></tr></thead><tbody>{filtered.map(l => <tr className={l.status === "Converted" ? "row-converted" : l.status === "STOP" ? "row-stop" : ""} key={l.enq}><td><b>{l.enq}</b><small>{l.city} · {l.source}</small></td><td><strong>{l.company}</strong><small>{l.contact} · {l.phone}</small></td><td>{l.project}</td><td>{l.bua.toLocaleString("en-IN")} <small>SqFt</small></td><td><Status value={l.status} /></td><td>{l.lastAction}<small>{l.age} ago</small></td><td>{l.nextAction}</td><td><button aria-label={`Open ${l.enq}`} onClick={() => { setSelected(l); setDrawer("proposal"); }}>›</button></td></tr>)}</tbody></table></div>
         <footer className="table-foot"><span>Showing {filtered.length} of {leads.length} leads</span><div><button>‹</button><button className="current">1</button><button>2</button><button>3</button><button>›</button></div></footer>
       </section>
+      </>}
     </section>
 
     {drawer && <div className={`overlay ${drawer === "proposal" ? "proposal-overlay" : drawer === "invoice" ? "invoice-overlay" : ""}`} role="dialog" aria-modal="true" aria-label={`${drawer} panel`}><div className={`drawer ${drawer === "proposal" ? "proposal-drawer" : drawer === "invoice" ? "invoice-drawer" : ""}`}>
