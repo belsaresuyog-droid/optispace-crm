@@ -1,20 +1,15 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { importedLeads, importMetadata } from "./imported-leads";
 
 type Lead = {
   enq: string; company: string; contact: string; phone: string; city: string;
-  project: string; bua: number; source: string; status: "Lead Received" | "Engagement Initiated" | "Proposal Sent" | "Converted" | "STOP";
+  project: string; bua: number; source: string; status: "Lead Received" | "Engagement Initiated" | "Proposal Sent" | "Converted" | "On Hold" | "STOP";
   lastAction: string; nextAction: string; age: string; value: number;
 };
 
-const seedLeads: Lead[] = [
-  { enq: "E2627001", company: "Aarav Auto Components", contact: "Rohan Shah", phone: "+91 98220 44018", city: "Chakan", project: "Greenfield", bua: 42000, source: "Reference", status: "Proposal Sent", lastAction: "Proposal 2627P022 shared · 12 Jul", nextAction: "Call scheduled for 21-07-2026 at 5:30 PM", age: "9d", value: 7560000 },
-  { enq: "E2627002", company: "Pragati Foods Pvt. Ltd.", contact: "Neha Kulkarni", phone: "+91 98901 67221", city: "Satara", project: "Turnkey", bua: 28000, source: "WOM", status: "Engagement Initiated", lastAction: "Visit 01 completed · 19 Jul", nextAction: "Share process-flow observations", age: "2d", value: 5040000 },
-  { enq: "E2627003", company: "Vertex Packaging", contact: "Aditya Joshi", phone: "+91 97655 12009", city: "Pune", project: "Brownfield", bua: 18500, source: "SMM", status: "Converted", lastAction: "Advance received · 20 Jul", nextAction: "Kick-off meeting · 24 Jul", age: "1d", value: 3330000 },
-  { enq: "E2627004", company: "Kinetic Sheet Metals", contact: "Sanjay Patil", phone: "+91 99220 18440", city: "Nashik", project: "Hybrid", bua: 34000, source: "Kaka Enq", status: "Lead Received", lastAction: "Lead received · Today", nextAction: "Qualifying phone call", age: "4h", value: 6120000 },
-  { enq: "E2627005", company: "MicroFab Industries", contact: "P. Deshmukh", phone: "+91 98811 00832", city: "Pimpri", project: "Light Greenfield", bua: 4200, source: "SMM", status: "STOP", lastAction: "Area verified below 5,000 SqFt", nextAction: "Closed — not worthy", age: "12d", value: 0 },
-];
+const seedLeads: Lead[] = importedLeads.map(lead => ({ ...lead, status: lead.status as Lead["status"] }));
 
 const nav = ["Dashboard", "Leads", "Visit Form", "Proposals", "Invoices", "Email Center", "Reports"];
 const money = (n: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(n);
@@ -45,6 +40,8 @@ export default function Home() {
     engaged: leads.filter(l => l.status === "Engagement Initiated").length,
     proposal: leads.filter(l => l.status === "Proposal Sent").length,
     converted: leads.filter(l => l.status === "Converted").length,
+    hold: leads.filter(l => l.status === "On Hold").length,
+    stop: leads.filter(l => l.status === "STOP").length,
   };
   const basic = area * rate; const gst = basic * 0.18; const total = basic + gst;
 
@@ -68,21 +65,23 @@ export default function Home() {
     <section className="content">
       <header className="topbar"><div><p>Tuesday, 21 July 2026</p><h1>Good morning, Minish.</h1></div><div className="top-actions"><label className="search"><span>⌕</span><input aria-label="Search leads" placeholder="Search enquiry, company, contact…" value={query} onChange={e => setQuery(e.target.value)} /></label><button className="icon-button" aria-label="Notifications">♢<span /></button><button className="primary" onClick={() => setDrawer("lead")}>＋ Add lead</button></div></header>
 
+      <div className="import-banner"><span>✓</span><div><b>{importMetadata.total} current leads imported</b><small>{importMetadata.source} · Synced {importMetadata.importedOn}</small></div><div><em>{counts.hold} on hold</em><em className="stop-count">{counts.stop} stopped</em></div></div>
+
       <section className="phase-grid">
         {[
           ["01", "Lead received", counts.lead, "Awaiting first engagement", "+2 this week"],
           ["02", "Engagement initiated", counts.engaged, "Video call or site visit", "+4 this week"],
-          ["03", "Proposal sent", counts.proposal, "Commercial decision pending", "₹75.6L pipeline"],
-          ["04", "Lead converted", counts.converted, "Advance / PI fulfilled", "18.4% conversion"],
+          ["03", "Proposal sent", counts.proposal, "Commercial decision pending", `${counts.proposal} proposals outstanding`],
+          ["04", "Lead converted", counts.converted, "Advance / PI fulfilled", `${((counts.converted / leads.length) * 100).toFixed(1)}% conversion`],
         ].map((p, i) => <article className={`phase-card p${i + 1}`} key={p[0]}><div className="phase-head"><span>PHASE {p[0]}</span><i>{i === 3 ? "✓" : "→"}</i></div><strong>{p[2]}</strong><h2>{p[1]}</h2><p>{p[3]}</p><footer><span>{p[4]}</span><b>{i === 3 ? "▲" : "↗"}</b></footer></article>)}
       </section>
 
       <section className="work-grid">
         <article className="panel priorities">
           <div className="panel-head"><div><span className="eyebrow">08:00 AM DAILY QUEUE</span><h2>Today’s priority actions</h2></div><button>View all 12 →</button></div>
-          <div className="priority-row urgent"><span className="priority-no">01</span><div className="priority-main"><span className="pill">CALENDAR COMMIT</span><h3>Aarav Auto Components</h3><p>E2627001 · Rohan Shah · +91 98220 44018</p><b>Call scheduled today at 5:30 PM</b></div><button onClick={() => toast("Call activity opened for E2627001")}>Log call</button></div>
-          <div className="priority-row"><span className="priority-no">02</span><div className="priority-main"><span className="pill amber">PROPOSAL FOLLOW-UP · 9 DAYS</span><h3>Tejas Polymer Systems</h3><p>E2626994 · Kedar More · +91 97677 32045</p><b>Last note: Decision pending with Director</b></div><button onClick={() => toast("Follow-up noted for E2626994")}>Follow up</button></div>
-          <div className="priority-row"><span className="priority-no">03</span><div className="priority-main"><span className="pill slate">FUTURE TRIGGER · JULY</span><h3>Indus Precision Works</h3><p>E2626978 · On hold</p><b>Partner in Germany — send monthly check-in email</b></div><button onClick={() => toast("Email draft queued in Email Center")}>Draft email</button></div>
+          {leads.filter(l => l.status === "Proposal Sent").slice(0, 1).map(l => <div className="priority-row urgent" key={l.enq}><span className="priority-no">01</span><div className="priority-main"><span className="pill">PROPOSAL FOLLOW-UP</span><h3>{l.company}</h3><p>{l.enq} · {l.contact} · {l.phone}</p><b>{l.lastAction}</b></div><button onClick={() => toast(`Follow-up opened for ${l.enq}`)}>Follow up</button></div>)}
+          {leads.filter(l => l.status === "Engagement Initiated").slice(0, 1).map(l => <div className="priority-row" key={l.enq}><span className="priority-no">02</span><div className="priority-main"><span className="pill amber">ENGAGEMENT FOLLOW-UP</span><h3>{l.company}</h3><p>{l.enq} · {l.contact} · {l.phone}</p><b>{l.lastAction}</b></div><button onClick={() => toast(`Activity opened for ${l.enq}`)}>Log action</button></div>)}
+          {leads.filter(l => l.status === "On Hold").slice(0, 1).map(l => <div className="priority-row" key={l.enq}><span className="priority-no">03</span><div className="priority-main"><span className="pill slate">HOLD REVIEW</span><h3>{l.company}</h3><p>{l.enq} · {l.contact}</p><b>{l.lastAction}</b></div><button onClick={() => toast(`Email draft queued for ${l.enq}`)}>Draft email</button></div>)}
         </article>
 
         <aside className="panel activity">
@@ -93,7 +92,7 @@ export default function Home() {
       </section>
 
       <section className="panel pipeline">
-        <div className="panel-head pipeline-head"><div><span className="eyebrow">LEAD MASTER</span><h2>Active pipeline</h2></div><div className="filters"><button className="selected">All leads <b>{leads.length}</b></button><button>Open</button><button>Converted</button><button>▾ Filter</button></div></div>
+        <div className="panel-head pipeline-head"><div><span className="eyebrow">LEAD MASTER · EXCEL SYNC</span><h2>Current pipeline</h2></div><div className="filters"><button className="selected">All leads <b>{leads.length}</b></button><button>On hold <b>{counts.hold}</b></button><button>Converted <b>{counts.converted}</b></button><button>▾ Filter</button></div></div>
         <div className="table-wrap"><table><thead><tr><th>ENQUIRY</th><th>ACCOUNT / CONTACT</th><th>PROJECT</th><th>BUA</th><th>STATUS</th><th>LAST ACTION</th><th>NEXT ACTION</th><th /></tr></thead><tbody>{filtered.map(l => <tr className={l.status === "Converted" ? "row-converted" : l.status === "STOP" ? "row-stop" : ""} key={l.enq}><td><b>{l.enq}</b><small>{l.city} · {l.source}</small></td><td><strong>{l.company}</strong><small>{l.contact} · {l.phone}</small></td><td>{l.project}</td><td>{l.bua.toLocaleString("en-IN")} <small>SqFt</small></td><td><Status value={l.status} /></td><td>{l.lastAction}<small>{l.age} ago</small></td><td>{l.nextAction}</td><td><button aria-label={`Open ${l.enq}`} onClick={() => { setSelected(l); setDrawer("proposal"); }}>›</button></td></tr>)}</tbody></table></div>
         <footer className="table-foot"><span>Showing {filtered.length} of {leads.length} leads</span><div><button>‹</button><button className="current">1</button><button>2</button><button>3</button><button>›</button></div></footer>
       </section>
