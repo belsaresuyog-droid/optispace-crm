@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Solutions Optispace CRM",
   description: "Industrial project CRM, commercial document and follow-up cockpit for Solutions Optispace.",
-  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+  icons: { icon: "/solutions-optispace-logo.png", shortcut: "/solutions-optispace-logo.png", apple: "/solutions-optispace-logo.png" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
