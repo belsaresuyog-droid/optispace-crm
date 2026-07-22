@@ -5,10 +5,14 @@ export const leads = sqliteTable("leads", {
   enqNo: text("enq_no").primaryKey(),
   clientName: text("client_name").notNull(), companyName: text("company_name").notNull(),
   email: text("email").notNull(), phone: text("phone").notNull(), city: text("city").notNull().default(""), address: text("address").notNull().default(""),
+  website: text("website").notNull().default(""),
   plotArea: real("plot_area").notNull().default(0), builtUpAreaSqft: real("built_up_area_sqft").notNull(), sourceAreaUnit: text("source_area_unit").notNull().default("SqFt"),
   operationNature: text("operation_nature").notNull().default(""), enquirySource: text("enquiry_source").notNull(), projectClass: text("project_class").notNull(),
-  status: text("status", { enum: ["LEAD_RECEIVED", "ENGAGED", "PROPOSAL_SENT", "CONVERTED", "STOP"] }).notNull().default("LEAD_RECEIVED"),
+  status: text("status", { enum: ["LEAD_RECEIVED", "ENGAGED", "PROPOSAL_SENT", "CONVERTED", "ON_HOLD", "STOP"] }).notNull().default("LEAD_RECEIVED"),
+  lastAction: text("last_action").notNull().default(""), nextAction: text("next_action").notNull().default(""), ageLabel: text("age_label").notNull().default(""),
+  proposalValue: real("proposal_value").notNull().default(0), proposalNo: text("proposal_no"),
   receivedAt: text("received_at").notNull().default(sql`CURRENT_TIMESTAMP`), updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  deletedAt: text("deleted_at"),
 });
 
 export const touchpoints = sqliteTable("touchpoints", {
@@ -43,4 +47,20 @@ export const visitForms = sqliteTable("visit_forms", {
 export const emailDrafts = sqliteTable("email_drafts", {
   id: integer("id").primaryKey({ autoIncrement: true }), enqNo: text("enq_no").notNull().references(() => leads.enqNo), subject: text("subject").notNull(), body: text("body").notNull(),
   triggerMonth: integer("trigger_month"), state: text("state", { enum: ["QUEUED", "SENT", "DISMISSED"] }).notNull().default("QUEUED"), createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const intelligenceProfiles = sqliteTable("intelligence_profiles", {
+  id: integer("id").primaryKey({ autoIncrement: true }), enqNo: text("enq_no").notNull().references(() => leads.enqNo),
+  companyJson: text("company_json").notNull(), digitalFootprintJson: text("digital_footprint_json").notNull(), behavioralTraitsJson: text("behavioral_traits_json").notNull(),
+  confidence: text("confidence").notNull().default("PRELIMINARY"), reviewed: integer("reviewed", { mode:"boolean" }).notNull().default(false), generatedAt: text("generated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const proposalIntelligence = sqliteTable("proposal_intelligence", {
+  id: integer("id").primaryKey({ autoIncrement: true }), enqNo: text("enq_no").notNull().references(() => leads.enqNo),
+  markdown: text("markdown").notNull(), projectFramework: text("project_framework").notNull(), estimatedBasicValue: real("estimated_basic_value").notNull().default(0), updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const socialSnapshots = sqliteTable("social_snapshots", {
+  id: integer("id").primaryKey({ autoIncrement: true }), channel: text("channel").notNull(), capturedAt: text("captured_at").notNull(),
+  reach: integer("reach").notNull().default(0), followers: integer("followers").notNull().default(0), engagementRate: real("engagement_rate").notNull().default(0), payloadJson: text("payload_json").notNull().default("{}"),
 });
