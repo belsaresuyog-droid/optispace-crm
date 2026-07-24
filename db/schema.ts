@@ -8,7 +8,8 @@ export const leads = sqliteTable("leads", {
   website: text("website").notNull().default(""),
   plotArea: real("plot_area").notNull().default(0), builtUpAreaSqft: real("built_up_area_sqft").notNull(), sourceAreaUnit: text("source_area_unit").notNull().default("SqFt"),
   operationNature: text("operation_nature").notNull().default(""), enquirySource: text("enquiry_source").notNull(), projectClass: text("project_class").notNull(),
-  status: text("status", { enum: ["LEAD_RECEIVED", "ENGAGED", "PROPOSAL_SENT", "CONVERTED", "ON_HOLD", "STOP"] }).notNull().default("LEAD_RECEIVED"),
+  status: text("status", { enum: ["LEAD_RECEIVED", "ENGAGED", "PROPOSAL_SENT", "CONVERTED", "ON_HOLD", "REJECTED", "STOP"] }).notNull().default("LEAD_RECEIVED"),
+  highPotential: integer("high_potential", { mode:"boolean" }).notNull().default(false),
   lastAction: text("last_action").notNull().default(""), nextAction: text("next_action").notNull().default(""), ageLabel: text("age_label").notNull().default(""),
   proposalValue: real("proposal_value").notNull().default(0), proposalNo: text("proposal_no"),
   receivedAt: text("received_at").notNull().default(sql`CURRENT_TIMESTAMP`), updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
@@ -63,4 +64,23 @@ export const proposalIntelligence = sqliteTable("proposal_intelligence", {
 export const socialSnapshots = sqliteTable("social_snapshots", {
   id: integer("id").primaryKey({ autoIncrement: true }), channel: text("channel").notNull(), capturedAt: text("captured_at").notNull(),
   reach: integer("reach").notNull().default(0), followers: integer("followers").notNull().default(0), engagementRate: real("engagement_rate").notNull().default(0), payloadJson: text("payload_json").notNull().default("{}"),
+});
+
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  email: text("email").notNull().unique(),
+  name: text("name").notNull().default(""),
+  picture: text("picture").notNull().default(""),
+  role: text("role", { enum: ["ADMIN", "USER"] }).notNull().default("USER"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  lastLoginAt: text("last_login_at"),
+});
+
+export const authSessions = sqliteTable("auth_sessions", {
+  token: text("token").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });

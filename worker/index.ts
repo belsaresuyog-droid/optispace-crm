@@ -5,6 +5,7 @@ import handler from "vinext/server/app-router-entry";
 interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
+  GOOGLE_CLIENT_ID?: string;
   WHATSAPP_ACCESS_TOKEN?: string;
   WHATSAPP_PHONE_NUMBER_ID?: string;
   IMAGES: {
@@ -14,6 +15,25 @@ interface Env {
       };
     };
   };
+}
+
+function sessionToken(request: Request) {
+  for (const part of (request.headers.get("cookie") || "").split(";")) {
+    const [key, ...value] = part.trim().split("=");
+    if (key === "optispace_session") return decodeURIComponent(value.join("="));
+  }
+  return "";
+}
+
+async function authenticated(request: Request, env: Env) {
+  const token = sessionToken(request);
+  if (!token) return false;
+  try {
+    return Boolean(await env.DB.prepare(`SELECT 1 ok FROM auth_sessions s JOIN users u ON u.id=s.user_id
+      WHERE s.token=? AND s.expires_at>CURRENT_TIMESTAMP AND u.is_active=1`).bind(token).first());
+  } catch {
+    return false;
+  }
 }
 
 async function buildEodMessage(env: Env, now = new Date()) {
@@ -74,6 +94,14 @@ const worker = {
         },
       }, allowedWidths);
     }
+
+    const publicPath = url.pathname === "/login" || url.pathname === "/api/auth/google" || url.pathname.startsWith("/_next/") || url.pathname.startsWith("/assets/") || /\.[a-z0-9]+$/i.test(url.pathname);
+    const signedIn = publicPath && url.pathname !== "/login" ? false : await authenticated(request, env);
+    if (!publicPath && !signedIn) {
+      if (url.pathname.startsWith("/api/")) return Response.json({ error: "Authentication required." }, { status: 401 });
+      return Response.redirect(new URL("/login", request.url), 302);
+    }
+    if (url.pathname === "/login" && signedIn) return Response.redirect(new URL("/", request.url), 302);
 
     return handler.fetch(request, env, ctx);
   },
