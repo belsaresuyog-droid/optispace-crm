@@ -25,10 +25,22 @@ export async function POST(request:Request){
   if(!enqNo)return Response.json({error:"Select a lead before creating the proposal."},{status:400});
   const exists=await env.DB.prepare("SELECT enq_no FROM leads WHERE enq_no=? AND deleted_at IS NULL").bind(enqNo).first();
   if(!exists)return Response.json({error:"Lead not found."},{status:404});
-  const next=Number((await env.DB.prepare("SELECT count(*) count FROM proposal_documents").first<{count:number}>())?.count||0)+1;
+  const existingProposal=await env.DB.prepare("SELECT id,proposal_no proposalNo FROM proposal_documents WHERE enq_no=? LIMIT 1").bind(enqNo).first<{id:number;proposalNo:string}>();
+  if(existingProposal)return Response.json(
+    {error:`This lead already has proposal ${existingProposal.proposalNo}. Open the existing proposal to view or edit it.`,proposalId:existingProposal.id},
+    {status:409},
+  );
+  const next=Number((await env.DB.prepare(
+    "SELECT COALESCE(MAX(CAST(SUBSTR(proposal_no, 6) AS INTEGER)), 0) + 1 next FROM proposal_documents WHERE proposal_no LIKE '2627P%'",
+  ).first<{next:number}>())?.next||1);
   const proposalNo=`2627P${String(next).padStart(3,"0")}`;
-  const result=await env.DB.prepare("INSERT INTO proposal_documents (proposal_no,enq_no,payload_json) VALUES (?,?,?)").bind(proposalNo,enqNo,JSON.stringify(body.payload||{})).run();
-  return Response.json({id:Number(result.meta.last_row_id),proposalNo,enqNo},{status:201});
+  try{
+    const result=await env.DB.prepare("INSERT INTO proposal_documents (proposal_no,enq_no,payload_json) VALUES (?,?,?)").bind(proposalNo,enqNo,JSON.stringify(body.payload||{})).run();
+    return Response.json({id:Number(result.meta.last_row_id),proposalNo,enqNo},{status:201});
+  }catch(error){
+    console.error("Proposal creation failed",error);
+    return Response.json({error:"Proposal could not be created. Please refresh the proposal register and try again."},{status:409});
+  }
 }
 export async function PATCH(request:Request){
   await ensureSchema();const body=await request.json() as {id?:number;payload?:unknown};const id=Number(body.id);
