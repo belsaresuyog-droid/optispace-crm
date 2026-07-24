@@ -95,7 +95,7 @@ const worker = {
       }, allowedWidths);
     }
 
-    const publicPath = url.pathname === "/login" || url.pathname === "/api/auth/google" || url.pathname.startsWith("/_next/") || url.pathname.startsWith("/assets/") || /\.[a-z0-9]+$/i.test(url.pathname);
+    const publicPath = url.pathname === "/login" || url.pathname === "/api/auth/google" || url.pathname === "/api/auth/config" || url.pathname.startsWith("/_next/") || url.pathname.startsWith("/assets/") || /\.[a-z0-9]+$/i.test(url.pathname);
     const signedIn = publicPath && url.pathname !== "/login" ? false : await authenticated(request, env);
     if (!publicPath && !signedIn) {
       if (url.pathname.startsWith("/api/")) return Response.json({ error: "Authentication required." }, { status: 401 });
