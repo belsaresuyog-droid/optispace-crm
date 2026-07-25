@@ -100,28 +100,30 @@
 .sidebar-foot .logout-button{border:1px solid #71828c;background:#ffffff0d;color:#fff;border-radius:4px;padding:6px 8px;font-size:10px;font-weight:700;white-space:nowrap;cursor:pointer}.sidebar-foot .logout-button:hover{background:#fff;color:#2e4350}.admin-standalone{min-height:100vh;background:#edf2f4}.admin-topbar{height:82px;background:#fff;border-bottom:1px solid #d5dfe3;display:flex;align-items:center;justify-content:space-between;padding:10px 28px}.admin-topbar img{width:225px;height:62px;object-fit:contain}.admin-topbar>div{display:flex;align-items:center;gap:15px;font-size:12px;color:#61747e}.admin-topbar button,.admin-back{border:1px solid #c9d4da;background:#fff;color:#334d5b;border-radius:4px;padding:9px 13px;font-size:11px;font-weight:700;text-decoration:none;cursor:pointer}.admin-standalone>.admin-page{max-width:1400px;margin:0 auto}.admin-page .reports-head{align-items:center}.admin-back:hover,.admin-topbar button:hover{border-color:#f4a643;background:#fff8eb}
 
 /* Proposal register follows the linked lead decision status. */
-.proposal-register tr.proposal-status-lead-received{background:#fbe8ef}
-.proposal-register tr.proposal-status-engagement-initiated{background:#fff7d8}
-.proposal-register tr.proposal-status-proposal-sent{background:#ffedd6}
-.proposal-register tr.proposal-status-accepted{background:#e5f3df}
-.proposal-register tr.proposal-status-on-hold{background:#fff7c9}
-.proposal-register tr.proposal-status-rejected{background:#fbe3e3}
-.proposal-register tr.proposal-status-lead-received:hover{background:#f8dce7}
-.proposal-register tr.proposal-status-engagement-initiated:hover{background:#fff1bb}
-.proposal-register tr.proposal-status-proposal-sent:hover{background:#ffe0ba}
-.proposal-register tr.proposal-status-accepted:hover{background:#d8ecd1}
-.proposal-register tr.proposal-status-on-hold:hover{background:#fff0ae}
-.proposal-register tr.proposal-status-rejected:hover{background:#f7d2d2}
-.proposal-register tr.proposal-status-lead-received td:first-child{border-left:4px solid #df91ad}
-.proposal-register tr.proposal-status-engagement-initiated td:first-child{border-left:4px solid #dbc35e}
-.proposal-register tr.proposal-status-proposal-sent td:first-child{border-left:4px solid #e3a04e}
-.proposal-register tr.proposal-status-accepted td:first-child{border-left:4px solid #70a366}
-.proposal-register tr.proposal-status-on-hold td:first-child{border-left:4px solid #d5bd4d}
-.proposal-register tr.proposal-status-rejected td:first-child{border-left:4px solid #d67878}
+.proposal-register tr.proposal-status-lead-received,.pipeline tr.proposal-status-lead-received{background:#fbe8ef}
+.proposal-register tr.proposal-status-engagement-initiated,.pipeline tr.proposal-status-engagement-initiated{background:#fff7d8}
+.proposal-register tr.proposal-status-proposal-sent,.pipeline tr.proposal-status-proposal-sent{background:#ffedd6}
+.proposal-register tr.proposal-status-accepted,.pipeline tr.proposal-status-accepted{background:#e5f3df}
+.proposal-register tr.proposal-status-on-hold,.pipeline tr.proposal-status-on-hold{background:#fff7c9}
+.proposal-register tr.proposal-status-rejected,.pipeline tr.proposal-status-rejected{background:#fbe3e3}
+.proposal-register tr.proposal-status-lead-received:hover,.pipeline tr.proposal-status-lead-received:hover{background:#f8dce7}
+.proposal-register tr.proposal-status-engagement-initiated:hover,.pipeline tr.proposal-status-engagement-initiated:hover{background:#fff1bb}
+.proposal-register tr.proposal-status-proposal-sent:hover,.pipeline tr.proposal-status-proposal-sent:hover{background:#ffe0ba}
+.proposal-register tr.proposal-status-accepted:hover,.pipeline tr.proposal-status-accepted:hover{background:#d8ecd1}
+.proposal-register tr.proposal-status-on-hold:hover,.pipeline tr.proposal-status-on-hold:hover{background:#fff0ae}
+.proposal-register tr.proposal-status-rejected:hover,.pipeline tr.proposal-status-rejected:hover{background:#f7d2d2}
+.proposal-register tr.proposal-status-lead-received td:first-child,.pipeline tr.proposal-status-lead-received td:first-child{border-left:4px solid #df91ad}
+.proposal-register tr.proposal-status-engagement-initiated td:first-child,.pipeline tr.proposal-status-engagement-initiated td:first-child{border-left:4px solid #dbc35e}
+.proposal-register tr.proposal-status-proposal-sent td:first-child,.pipeline tr.proposal-status-proposal-sent td:first-child{border-left:4px solid #e3a04e}
+.proposal-register tr.proposal-status-accepted td:first-child,.pipeline tr.proposal-status-accepted td:first-child{border-left:4px solid #70a366}
+.proposal-register tr.proposal-status-on-hold td:first-child,.pipeline tr.proposal-status-on-hold td:first-child{border-left:4px solid #d5bd4d}
+.proposal-register tr.proposal-status-rejected td:first-child,.pipeline tr.proposal-status-rejected td:first-child{border-left:4px solid #d67878}
 
 /* Proposal negotiation workspace */
 .proposal-register .negotiate-button{display:inline-flex!important;align-items:center!important;justify-content:center!important;height:32px!important;border:1px solid #d79a3f!important;background:#fff5df!important;color:#80540f!important;border-radius:4px!important;padding:0 11px!important;font-weight:700!important;cursor:pointer}
 .proposal-create-controls .export-excel-button{border:1px solid #6d9670;background:#eef7eb;color:#35613a;border-radius:4px;padding:11px 14px;font-weight:700;white-space:nowrap;cursor:pointer}.proposal-create-controls .export-excel-button:hover{background:#dff0da}
+.invoice-search-panel{gap:16px}.invoice-filter-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}.invoice-filter-actions>p{margin:0}.invoice-type-filter{display:flex;border:1px solid #d4dde1;border-radius:4px;overflow:hidden;background:#fff}.invoice-type-filter button{border:0;border-right:1px solid #d4dde1;background:#fff;color:#61737f;padding:9px 12px;font-weight:700;cursor:pointer}.invoice-type-filter button:last-child{border-right:0}.invoice-type-filter button.selected{background:#314a59;color:#fff}.invoice-type-filter b{display:inline-block;margin-left:4px;border-radius:10px;background:#e8edef;color:#536772;padding:1px 6px;font-size:10px}.invoice-type-filter button.selected b{background:#fff2;color:#fff}.invoice-filter-actions>.export-excel-button{border:1px solid #6d9670;background:#eef7eb;color:#35613a;border-radius:4px;padding:9px 13px;font-weight:700;white-space:nowrap;cursor:pointer}.invoice-filter-actions>.export-excel-button:hover{background:#dff0da}.invoice-filter-actions>.export-excel-button:disabled{opacity:.5;cursor:not-allowed}
+.invoice-editor .editor-total{display:grid;grid-template-columns:1fr auto;gap:5px 14px;padding:12px 18px}.invoice-editor .editor-total span{font-size:11px;color:#cbd5da}.invoice-editor .editor-total strong{font-size:16px;text-align:right}.invoice-editor .editor-total strong:last-child{color:#ffc36f}.invoice-payment-status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:9px 10px;border-left:3px solid #c49f3b;background:#fff8dc;color:#705c20;font-size:11px}.invoice-payment-status span{font-weight:700}.invoice-payment-status.partial{border-left-color:#df9d45;background:#fff0db;color:#80581f}.invoice-payment-status.paid{border-left-color:#6d9d62;background:#e7f3e2;color:#396336}.payment-state{width:max-content;border-radius:9px;padding:2px 7px!important;font-weight:700}.payment-state.pending{background:#fff4c8;color:#745d1d}.payment-state.partially-paid{background:#ffead0;color:#84541a}.payment-state.paid{background:#dcefd5;color:#356131}.invoice-summary dl .remaining{background:#eef3f5;font-weight:700}.invoice-summary dl .remaining dd{color:#a95c20}
 .negotiation-overlay{justify-content:center;align-items:center;padding:24px}
 .negotiation-form{width:min(820px,96vw);max-height:94vh;overflow:auto;background:#f7f9fa;border-top:5px solid var(--orange);box-shadow:0 22px 70px #14222c55}
 .negotiation-form>header{display:flex;justify-content:space-between;gap:20px;padding:22px 26px;background:#fff;border-bottom:1px solid var(--line)}

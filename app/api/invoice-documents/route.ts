@@ -12,9 +12,30 @@ async function ensureSchema(){
     created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (enq_no) REFERENCES leads(enq_no)
+  )`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS proposal_negotiations (
+    id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+    proposal_id integer NOT NULL UNIQUE,
+    enq_no text NOT NULL,
+    original_area real NOT NULL,
+    negotiated_area real NOT NULL,
+    original_proposal_value real NOT NULL,
+    negotiated_proposal_value real NOT NULL,
+    original_travel_value real NOT NULL,
+    negotiated_travel_value real NOT NULL,
+    scope_json text DEFAULT '{}' NOT NULL,
+    travel_json text DEFAULT '{}' NOT NULL,
+    notes text DEFAULT '' NOT NULL,
+    created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
   )`).run();ready=true;
 }
-export async function GET(){await ensureSchema();const rows=await env.DB.prepare(`SELECT i.id,i.invoice_no invoiceNo,i.enq_no enqNo,i.mode,i.payload_json payloadJson,i.created_at createdAt,i.updated_at updatedAt,l.company_name companyName,l.client_name clientName FROM invoice_documents i JOIN leads l ON l.enq_no=i.enq_no WHERE l.deleted_at IS NULL ORDER BY i.updated_at DESC,i.id DESC`).all();return Response.json({invoices:rows.results.map((row:any)=>({...row,payload:JSON.parse(row.payloadJson)}))});}
-export async function POST(request:Request){await ensureSchema();const body=await request.json() as {enqNo?:string;mode?:string;payload?:unknown};const enqNo=String(body.enqNo||"").trim();if(!enqNo)return Response.json({error:"Select a lead before creating the invoice."},{status:400});if(!await env.DB.prepare("SELECT enq_no FROM leads WHERE enq_no=? AND deleted_at IS NULL").bind(enqNo).first())return Response.json({error:"Lead not found."},{status:404});const next=Number((await env.DB.prepare("SELECT count(*) count FROM invoice_documents").first<{count:number}>())?.count||0)+1;const invoiceNo=`2627OS${String(next).padStart(3,"0")}`;const mode=body.mode==="Tax"?"Tax":"Proforma";const result=await env.DB.prepare("INSERT INTO invoice_documents (invoice_no,enq_no,mode,payload_json) VALUES (?,?,?,?)").bind(invoiceNo,enqNo,mode,JSON.stringify(body.payload||{})).run();return Response.json({id:Number(result.meta.last_row_id),invoiceNo,enqNo,mode},{status:201});}
+function negotiatedPayload(payload:Record<string,any>,negotiation:any){
+  if(!negotiation)return payload;
+  let travel:Record<string,any>={};try{travel=JSON.parse(String(negotiation.negotiatedTravelJson||"{}"));}catch{}
+  return {...payload,details:{...(payload.details||{}),basic:Number(negotiation.negotiatedProposalValue)||0,distance:Number(travel.km)||0,kmRate:Number(travel.kmRate)||20,stayDays:Number(travel.days)||0,people:Number(travel.people)||2,stayRate:Number(travel.stayRate)||5000,commercialSource:"Negotiated proposal",proposalId:Number(negotiation.proposalId),negotiationUpdatedAt:negotiation.negotiationUpdatedAt}};
+}
+export async function GET(){await ensureSchema();const rows=await env.DB.prepare(`SELECT i.id,i.invoice_no invoiceNo,i.enq_no enqNo,i.mode,i.payload_json payloadJson,i.created_at createdAt,i.updated_at updatedAt,l.company_name companyName,l.client_name clientName,pn.proposal_id proposalId,pn.negotiated_proposal_value negotiatedProposalValue,pn.travel_json negotiatedTravelJson,pn.updated_at negotiationUpdatedAt FROM invoice_documents i JOIN leads l ON l.enq_no=i.enq_no LEFT JOIN proposal_negotiations pn ON pn.enq_no=i.enq_no WHERE l.deleted_at IS NULL ORDER BY i.updated_at DESC,i.id DESC`).all();return Response.json({invoices:rows.results.map((row:any)=>{const payload=negotiatedPayload(JSON.parse(row.payloadJson),row.proposalId?row:null);return {...row,payload};})});}
+export async function POST(request:Request){await ensureSchema();const body=await request.json() as {enqNo?:string;mode?:string;payload?:Record<string,any>};const enqNo=String(body.enqNo||"").trim();if(!enqNo)return Response.json({error:"Select a lead before creating the invoice."},{status:400});if(!await env.DB.prepare("SELECT enq_no FROM leads WHERE enq_no=? AND deleted_at IS NULL").bind(enqNo).first())return Response.json({error:"Lead not found."},{status:404});const negotiation=await env.DB.prepare(`SELECT proposal_id proposalId,negotiated_proposal_value negotiatedProposalValue,travel_json negotiatedTravelJson,updated_at negotiationUpdatedAt FROM proposal_negotiations WHERE enq_no=? ORDER BY updated_at DESC LIMIT 1`).bind(enqNo).first();if(!negotiation)return Response.json({error:"Save a proposal negotiation for this lead before creating an invoice."},{status:409});const next=Number((await env.DB.prepare("SELECT count(*) count FROM invoice_documents").first<{count:number}>())?.count||0)+1;const invoiceNo=`2627OS${String(next).padStart(3,"0")}`;const mode=body.mode==="Tax"?"Tax":"Proforma",payload=negotiatedPayload(body.payload||{},negotiation);const result=await env.DB.prepare("INSERT INTO invoice_documents (invoice_no,enq_no,mode,payload_json) VALUES (?,?,?,?)").bind(invoiceNo,enqNo,mode,JSON.stringify(payload)).run();return Response.json({id:Number(result.meta.last_row_id),invoiceNo,enqNo,mode,payload},{status:201});}
 export async function PATCH(request:Request){await ensureSchema();const body=await request.json() as {id?:number;mode?:string;payload?:unknown};const id=Number(body.id);if(!id)return Response.json({error:"Invoice record id is required."},{status:400});await env.DB.prepare("UPDATE invoice_documents SET mode=?,payload_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(body.mode==="Tax"?"Tax":"Proforma",JSON.stringify(body.payload||{}),id).run();return Response.json({updated:true,id});}
 export async function DELETE(request:Request){await ensureSchema();const id=Number(new URL(request.url).searchParams.get("id"));if(!id)return Response.json({error:"Invoice record id is required."},{status:400});const result=await env.DB.prepare("DELETE FROM invoice_documents WHERE id=?").bind(id).run();if(!result.meta.changes)return Response.json({error:"Invoice not found."},{status:404});return Response.json({deleted:true,id});}
