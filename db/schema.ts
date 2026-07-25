@@ -9,6 +9,7 @@ export const leads = sqliteTable("leads", {
   plotArea: real("plot_area").notNull().default(0), builtUpAreaSqft: real("built_up_area_sqft").notNull(), sourceAreaUnit: text("source_area_unit").notNull().default("SqFt"),
   operationNature: text("operation_nature").notNull().default(""), enquirySource: text("enquiry_source").notNull(), projectClass: text("project_class").notNull(),
   status: text("status", { enum: ["LEAD_RECEIVED", "ENGAGED", "PROPOSAL_SENT", "CONVERTED", "ON_HOLD", "REJECTED", "STOP"] }).notNull().default("LEAD_RECEIVED"),
+  engagementType: text("engagement_type", { enum: ["PHONE_CALL", "VIDEO_CALL", "ACTUAL_VISIT"] }),
   highPotential: integer("high_potential", { mode:"boolean" }).notNull().default(false),
   lastAction: text("last_action").notNull().default(""), nextAction: text("next_action").notNull().default(""), ageLabel: text("age_label").notNull().default(""),
   proposalValue: real("proposal_value").notNull().default(0), proposalNo: text("proposal_no"),
@@ -20,7 +21,7 @@ export const touchpoints = sqliteTable("touchpoints", {
   id: integer("id").primaryKey({ autoIncrement: true }), enqNo: text("enq_no").notNull().references(() => leads.enqNo),
   type: text("type", { enum: ["PHONE", "VIDEO", "SITE_VISIT", "EMAIL", "NOTE"] }).notNull(), sequenceNo: integer("sequence_no"),
   scheduledAt: text("scheduled_at"), occurredAt: text("occurred_at"), completed: integer("completed", { mode: "boolean" }).notNull().default(false),
-  travelVoucherShared: integer("travel_voucher_shared", { mode: "boolean" }).notNull().default(false), notes: text("notes").notNull().default(""),
+  notes: text("notes").notNull().default(""),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
@@ -43,6 +44,27 @@ export const payments = sqliteTable("payments", {
 export const visitForms = sqliteTable("visit_forms", {
   id: integer("id").primaryKey({ autoIncrement: true }), enqNo: text("enq_no").notNull().references(() => leads.enqNo),
   payloadJson: text("payload_json").notNull(), completedAt: text("completed_at"), createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const travelVouchers = sqliteTable("travel_vouchers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  voucherNo: text("voucher_no").notNull().unique(),
+  enqNo: text("enq_no").notNull().references(() => leads.enqNo, { onDelete: "cascade" }),
+  voucherDate: text("voucher_date").notNull(),
+  siteLocation: text("site_location").notNull().default(""),
+  contact: text("contact").notNull().default(""),
+  particulars: text("particulars").notNull().default("Travelling Expenses"),
+  travelFrom: text("travel_from").notNull().default("Solutions Optispace"),
+  travelTo: text("travel_to").notNull().default(""),
+  distanceKm: real("distance_km").notNull().default(0),
+  kmRate: real("km_rate").notNull().default(20),
+  stayDays: real("stay_days").notNull().default(0),
+  people: real("people").notNull().default(2),
+  stayRate: real("stay_rate").notNull().default(5000),
+  amount: real("amount").notNull().default(0),
+  amountWords: text("amount_words").notNull().default(""),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const emailDrafts = sqliteTable("email_drafts", {
