@@ -118,6 +118,7 @@
 .proposal-register tr.proposal-status-accepted td:first-child,.pipeline tr.proposal-status-accepted td:first-child{border-left:4px solid #70a366}
 .proposal-register tr.proposal-status-on-hold td:first-child,.pipeline tr.proposal-status-on-hold td:first-child{border-left:4px solid #d5bd4d}
 .proposal-register tr.proposal-status-rejected td:first-child,.pipeline tr.proposal-status-rejected td:first-child{border-left:4px solid #d67878}
+.pipeline tr.proposal-status-lead-received{background:#e8f3f9}.pipeline tr.proposal-status-lead-received:hover{background:#dcecf5}.pipeline tr.proposal-status-lead-received td:first-child{border-left-color:#82b4cf}
 
 /* Proposal negotiation workspace */
 .proposal-register .negotiate-button{display:inline-flex!important;align-items:center!important;justify-content:center!important;height:32px!important;border:1px solid #d79a3f!important;background:#fff5df!important;color:#80540f!important;border-radius:4px!important;padding:0 11px!important;font-weight:700!important;cursor:pointer}
