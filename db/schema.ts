@@ -56,6 +56,14 @@ export const informationGathering = sqliteTable("information_gathering", {
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const factoryData = sqliteTable("factory_data", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  enqNo: text("enq_no").notNull().unique().references(() => leads.enqNo, { onDelete: "cascade" }),
+  payloadJson: text("payload_json").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const travelVouchers = sqliteTable("travel_vouchers", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   voucherNo: text("voucher_no").notNull().unique(),

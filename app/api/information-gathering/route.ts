@@ -16,15 +16,15 @@ async function ensureSchema(){
   ready=true;
 }
 
-const map=(row:any)=>({id:Number(row.id),enqNo:row.enq_no,callType:row.call_type,payload:JSON.parse(row.payload_json||"{}"),occurredAt:row.occurred_at,createdAt:row.created_at,updatedAt:row.updated_at,companyName:row.company_name,clientName:row.client_name});
+const map=(row:any)=>({id:Number(row.id),enqNo:row.enq_no,callType:row.call_type,payload:JSON.parse(row.payload_json||"{}"),occurredAt:row.occurred_at,createdAt:row.created_at,updatedAt:row.updated_at,companyName:row.company_name,clientName:row.client_name,actionCount:Number(row.action_count||0)});
 
 export async function GET(request:Request){
   await ensureSchema();
   const type=new URL(request.url).searchParams.get("type");
   const filter=type==="AUDIO"||type==="VIDEO"?type:"";
   const result=filter
-    ?await env.DB.prepare(`SELECT i.*,l.company_name,l.client_name FROM information_gathering i INNER JOIN leads l ON l.enq_no=i.enq_no WHERE l.deleted_at IS NULL AND i.call_type=? ORDER BY i.occurred_at DESC,i.id DESC`).bind(filter).all()
-    :await env.DB.prepare(`SELECT i.*,l.company_name,l.client_name FROM information_gathering i INNER JOIN leads l ON l.enq_no=i.enq_no WHERE l.deleted_at IS NULL ORDER BY i.occurred_at DESC,i.id DESC`).all();
+    ?await env.DB.prepare(`SELECT i.*,l.company_name,l.client_name,(SELECT count(*) FROM touchpoints t WHERE t.enq_no=i.enq_no AND t.type=CASE WHEN i.call_type='AUDIO' THEN 'PHONE' ELSE 'VIDEO' END) action_count FROM information_gathering i INNER JOIN leads l ON l.enq_no=i.enq_no WHERE l.deleted_at IS NULL AND i.call_type=? ORDER BY i.occurred_at DESC,i.id DESC`).bind(filter).all()
+    :await env.DB.prepare(`SELECT i.*,l.company_name,l.client_name,(SELECT count(*) FROM touchpoints t WHERE t.enq_no=i.enq_no AND t.type=CASE WHEN i.call_type='AUDIO' THEN 'PHONE' ELSE 'VIDEO' END) action_count FROM information_gathering i INNER JOIN leads l ON l.enq_no=i.enq_no WHERE l.deleted_at IS NULL ORDER BY i.occurred_at DESC,i.id DESC`).all();
   return Response.json({records:(result.results||[]).map(map)});
 }
 
@@ -40,6 +40,11 @@ function validate(body:Record<string,unknown>){
 export async function POST(request:Request){
   await ensureSchema();const body=await request.json() as Record<string,unknown>,data=validate(body);if("error" in data)return Response.json({error:data.error},{status:400});
   if(!await env.DB.prepare("SELECT enq_no FROM leads WHERE enq_no=? AND deleted_at IS NULL").bind(data.enqNo).first())return Response.json({error:"Lead not found."},{status:404});
+  const existing=await env.DB.prepare("SELECT id FROM information_gathering WHERE enq_no=? AND call_type=? ORDER BY id DESC LIMIT 1").bind(data.enqNo,data.callType).first<{id:number}>();
+  if(existing){
+    const record=await env.DB.prepare("UPDATE information_gathering SET payload_json=?,occurred_at=?,updated_at=CURRENT_TIMESTAMP WHERE id=? RETURNING *").bind(JSON.stringify(data.payload),data.occurredAt,existing.id).first();
+    return Response.json({record:map(record),updated:true});
+  }
   const record=await env.DB.prepare("INSERT INTO information_gathering (enq_no,call_type,payload_json,occurred_at) VALUES (?,?,?,?) RETURNING *").bind(data.enqNo,data.callType,JSON.stringify(data.payload),data.occurredAt).first();
   return Response.json({record:map(record)},{status:201});
 }

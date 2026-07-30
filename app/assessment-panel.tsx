@@ -1,0 +1,36 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+type Lead={enq:string;company:string;contact:string};
+type SourceRecord={id:number;enqNo:string;companyName:string;clientName:string;payload:Record<string,unknown>;updatedAt?:string;occurredAt?:string;completedAt?:string;createdAt?:string};
+type Assessment={enqNo:string;companyName:string;clientName:string;audio:SourceRecord;video?:SourceRecord;visit?:SourceRecord;factory?:SourceRecord};
+
+const humanize=(value:string)=>value.replace(/([a-z])([A-Z])/g,"$1 $2").replace(/^./,letter=>letter.toUpperCase());
+const formatDate=(value?:string)=>value?new Intl.DateTimeFormat("en-IN",{day:"2-digit",month:"short",year:"numeric"}).format(new Date(value)):"Pending";
+const hasValue=(value:unknown)=>value!==""&&value!==null&&value!==undefined&&(!Array.isArray(value)||value.length>0);
+
+function Value({value}:{value:unknown}){
+  if(Array.isArray(value))return <div className="assessment-chips">{value.map((item,index)=><span key={index}>{typeof item==="object"?JSON.stringify(item):String(item)}</span>)}</div>;
+  if(typeof value==="object"&&value)return <div className="assessment-object">{Object.entries(value as Record<string,unknown>).filter(([,item])=>hasValue(item)).map(([key,item])=><div key={key}><b>{humanize(key)}</b><span>{Array.isArray(item)?item.join(", "):typeof item==="object"?JSON.stringify(item):String(item)}</span></div>)}</div>;
+  return <span>{String(value)}</span>;
+}
+
+function DetailSection({title,record,empty}:{title:string;record?:SourceRecord;empty:string}){
+  const entries=Object.entries(record?.payload||{}).filter(([,value])=>hasValue(value));
+  return <section className="assessment-detail-section"><header><div><span className="eyebrow">{title}</span><h3>{title} details</h3></div><small>{record?formatDate(record.updatedAt||record.completedAt||record.occurredAt||record.createdAt):"Not completed"}</small></header>{entries.length?<div className="assessment-fields">{entries.map(([key,value])=><article key={key}><b>{humanize(key)}</b><Value value={value}/></article>)}</div>:<p className="assessment-empty">{empty}</p>}</section>;
+}
+
+export default function AssessmentPanel({leads,toast}:{leads:Lead[];toast:(message:string)=>void}){
+  const [records,setRecords]=useState<Assessment[]>([]),[loading,setLoading]=useState(true),[query,setQuery]=useState(""),[selected,setSelected]=useState<Assessment|null>(null),[page,setPage]=useState(1),[size,setSize]=useState(10);
+  useEffect(()=>{setLoading(true);Promise.all([fetch("/api/information-gathering?type=AUDIO"),fetch("/api/information-gathering?type=VIDEO"),fetch("/api/visit-forms"),fetch("/api/factory-data")]).then(async responses=>{if(responses.some(response=>!response.ok))throw new Error();const [audioData,videoData,visitData,factoryData]=await Promise.all(responses.map(response=>response.json()));const latest=(items:SourceRecord[])=>{const map=new Map<string,SourceRecord>();for(const item of items||[])if(!map.has(item.enqNo))map.set(item.enqNo,item);return map;};const audio=latest(audioData.records||[]),video=latest(videoData.records||[]),visit=latest(visitData.visitForms||[]),factory=latest(factoryData.records||[]);setRecords([...audio.values()].map(item=>{const lead=leads.find(candidate=>candidate.enq===item.enqNo);return {enqNo:item.enqNo,companyName:item.companyName||lead?.company||"",clientName:item.clientName||lead?.contact||"",audio:item,video:video.get(item.enqNo),visit:visit.get(item.enqNo),factory:factory.get(item.enqNo)};}));}).catch(()=>toast("Assessment records could not be loaded.")).finally(()=>setLoading(false));},[leads]);
+  const filtered=useMemo(()=>{const needle=query.trim().toLowerCase();return records.filter(record=>`${record.enqNo} ${record.companyName} ${record.clientName}`.toLowerCase().includes(needle));},[records,query]);
+  const pages=Math.max(1,Math.ceil(filtered.length/size)),safePage=Math.min(page,pages),shown=filtered.slice((safePage-1)*size,safePage*size);
+  useEffect(()=>setPage(1),[query,size]);
+  return <div className="assessment-page">
+    <header className="leads-head"><div><span className="eyebrow">CONSOLIDATED DISCOVERY</span><h2>Client assessments</h2><p>Automatically combines Audio Call, Video Call, Visit Form and Factory Data Collection.</p></div></header>
+    <section className="lead-search-panel"><div><span>⌕</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search company, enquiry or contact…"/>{query&&<button onClick={()=>setQuery("")}>Clear</button>}</div><p><b>{filtered.length}</b> assessments</p></section>
+    <section className="panel assessment-register"><div className="table-wrap"><table><thead><tr><th>LEAD / COMPANY</th><th>AUDIO</th><th>VIDEO</th><th>VISIT</th><th>FACTORY DATA</th><th>ASSESSMENT</th></tr></thead><tbody>{shown.map(record=><tr className="lead-clickable-row" key={record.enqNo} onClick={()=>setSelected(record)}><td><b>{record.companyName}</b><small>{record.enqNo} · {record.clientName}</small></td><td><span className="assessment-status complete">Complete</span></td><td><span className={`assessment-status ${record.video?"complete":"pending"}`}>{record.video?"Complete":"Pending"}</span></td><td><span className={`assessment-status ${record.visit?"complete":"pending"}`}>{record.visit?"Complete":"Pending"}</span></td><td><span className={`assessment-status ${record.factory?"complete":"pending"}`}>{record.factory?"Complete":"Pending"}</span></td><td><button className="edit-lead-button" onClick={event=>{event.stopPropagation();setSelected(record);}}>View assessment</button></td></tr>)}{!loading&&!shown.length&&<tr><td colSpan={6}>No leads have completed Audio Call qualification yet.</td></tr>}</tbody></table></div><footer className="table-foot"><span>Showing {shown.length} of {filtered.length} assessments</span><div className="pagination-controls"><label>Rows per page<select value={size} onChange={event=>setSize(Number(event.target.value))}>{[10,25,50,100].map(value=><option key={value}>{value}</option>)}</select></label><span>Page {safePage} of {pages}</span><button disabled={safePage<=1} onClick={()=>setPage(safePage-1)}>‹</button><button className="current">{safePage}</button><button disabled={safePage>=pages} onClick={()=>setPage(safePage+1)}>›</button></div></footer></section>
+    {selected&&<div className="overlay" onMouseDown={event=>{if(event.target===event.currentTarget)setSelected(null);}}><div className="drawer assessment-drawer"><header><div><span className="eyebrow">CLIENT ASSESSMENT · {selected.enqNo}</span><h2>{selected.companyName}</h2><p>{selected.clientName} · Consolidated discovery record</p></div><button className="close" onClick={()=>setSelected(null)}>×</button></header><div className="form-body assessment-body"><DetailSection title="Audio Call" record={selected.audio} empty="Audio qualification is not available."/><DetailSection title="Video Call" record={selected.video} empty="Video Meeting Assessment is pending."/><DetailSection title="Visit Form" record={selected.visit} empty="Visit Form is pending."/><DetailSection title="Factory Data Collection" record={selected.factory} empty="Factory engineering data is pending."/><div className="drawer-actions"><button className="primary" onClick={()=>setSelected(null)}>Close assessment</button></div></div></div></div>}
+  </div>;
+}
