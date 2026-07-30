@@ -46,6 +46,16 @@ export const visitForms = sqliteTable("visit_forms", {
   payloadJson: text("payload_json").notNull(), completedAt: text("completed_at"), createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const informationGathering = sqliteTable("information_gathering", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  enqNo: text("enq_no").notNull().references(() => leads.enqNo, { onDelete: "cascade" }),
+  callType: text("call_type", { enum: ["AUDIO", "VIDEO"] }).notNull(),
+  payloadJson: text("payload_json").notNull(),
+  occurredAt: text("occurred_at").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const travelVouchers = sqliteTable("travel_vouchers", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   voucherNo: text("voucher_no").notNull().unique(),
