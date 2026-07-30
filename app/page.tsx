@@ -493,7 +493,7 @@ export default function Home() {
     <aside className="sidebar">
       <Mark />
       <div className="workspace"><small>WORKSPACE</small><b>Optispace CRM</b><span>FY 2026–27</span></div>
-      <nav>{[...nav,...(currentUser?.role==="ADMIN"?["Admin"]:[])].map(item => <button className={active === item ? "active" : ""} key={item} onClick={() => { if(item==="Admin"){setActive("Admin");setDrawer(null);return;} setActive(item); }}><i>{navIcons[item]}</i>{item}</button>)}</nav>
+      <nav>{[...nav,...(currentUser?.role==="ADMIN"?["Admin"]:[])].map(item => <button className={active === item ? "active" : ""} key={item} onClick={() => { if(item==="Admin"){setActive("Admin");setDrawer(null);return;} setActive(item); }}><i>{navIcons[item]}</i><span>{item}</span></button>)}</nav>
       <div className="sidebar-foot"><div className="avatar">{(currentUser?.name||currentUser?.email||"U").slice(0,2).toUpperCase()}</div><span><b>{currentUser?.name||currentUser?.email||"CRM user"}</b><small>{currentUser?.role==="ADMIN"?"Administrator":"User"}</small></span><button className="logout-button" aria-label="Log out" title="Log out" onClick={async()=>{await fetch("/api/auth/logout",{method:"POST"});window.location.assign("/login");}}>Log out</button></div>
     </aside>
 
