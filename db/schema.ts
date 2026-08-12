@@ -6,6 +6,7 @@ export const leads = sqliteTable("leads", {
   clientName: text("client_name").notNull(), companyName: text("company_name").notNull(),
   email: text("email").notNull(), phone: text("phone").notNull(), city: text("city").notNull().default(""), address: text("address").notNull().default(""),
   website: text("website").notNull().default(""),
+  products: text("products").notNull().default(""),
   plotArea: real("plot_area").notNull().default(0), builtUpAreaSqft: real("built_up_area_sqft").notNull(), sourceAreaUnit: text("source_area_unit").notNull().default("SqFt"),
   operationNature: text("operation_nature").notNull().default(""), enquirySource: text("enquiry_source").notNull(), projectClass: text("project_class").notNull(),
   status: text("status", { enum: ["LEAD_RECEIVED", "ENGAGED", "PROPOSAL_SENT", "CONVERTED", "ON_HOLD", "REJECTED", "STOP"] }).notNull().default("LEAD_RECEIVED"),
