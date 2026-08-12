@@ -34,10 +34,17 @@ export async function PATCH(request:Request){
   await ensureSchema();
   const p=await request.json() as Record<string,string|number>; const enqNo=String(p.enqNo ?? "").trim();
   if(!enqNo) return Response.json({error:"Enquiry number is required."},{status:400});
-  const status=statusMap[String(p.status)] || "LEAD_RECEIVED" as const,engagementType=String(p.engagementType||"").trim();
-  if(status==="ENGAGED"&&!["PHONE_CALL","VIDEO_CALL","ACTUAL_VISIT"].includes(engagementType))return Response.json({error:"Engagement type is required for Engagement Initiated status."},{status:400});
-  const values={ enqNo, clientName:String(p.clientName ?? p.contact ?? "").trim(), companyName:String(p.companyName ?? p.company ?? "").trim(), email:String(p.email ?? "").trim(), phone:String(p.phone ?? "").trim(), city:String(p.city ?? "").trim(), address:String(p.address ?? ""), website:String(p.website ?? "").trim(), plotArea:Number(p.plotArea ?? 0), builtUpAreaSqft:Number(p.builtUpArea ?? p.bua ?? 0), sourceAreaUnit:"SqFt", operationNature:String(p.operationNature ?? ""), enquirySource:String(p.enquirySource ?? p.source ?? "Website"), projectClass:String(p.projectClass ?? p.project ?? "Greenfield"), status, engagementType:status==="ENGAGED"?engagementType as "PHONE_CALL"|"VIDEO_CALL"|"ACTUAL_VISIT":null, highPotential:Boolean(p.highPotential), lastAction:String(p.lastAction ?? ""), nextAction:String(p.nextAction ?? ""), ageLabel:String(p.age ?? ""), proposalValue:Number(p.value ?? 0), proposalNo:String(p.proposalNo ?? "") || null, updatedAt:new Date().toISOString() };
-  const [lead]=await getDb().insert(leads).values(values).onConflictDoUpdate({target:leads.enqNo,set:values}).returning();
+  const db=getDb();
+  const [existing]=await db.select().from(leads).where(eq(leads.enqNo,enqNo)).limit(1);
+  if(!existing||existing.deletedAt)return Response.json({error:"Lead was not found."},{status:404});
+  const status=statusMap[String(p.status)] || existing.status;
+  const requestedEngagement=String(p.engagementType||"").trim();
+  const validEngagement=["PHONE_CALL","VIDEO_CALL","ACTUAL_VISIT"].includes(requestedEngagement)
+    ? requestedEngagement as "PHONE_CALL"|"VIDEO_CALL"|"ACTUAL_VISIT"
+    : null;
+  const engagementType=status==="ENGAGED"?(validEngagement||existing.engagementType||null):null;
+  const values={ clientName:String(p.clientName ?? p.contact ?? existing.clientName).trim(), companyName:String(p.companyName ?? p.company ?? existing.companyName).trim(), email:String(p.email ?? existing.email).trim(), phone:String(p.phone ?? existing.phone).trim(), city:String(p.city ?? existing.city).trim(), address:String(p.address ?? existing.address), website:String(p.website ?? existing.website).trim(), plotArea:Number(p.plotArea ?? existing.plotArea), builtUpAreaSqft:Number(p.builtUpArea ?? p.bua ?? existing.builtUpAreaSqft), sourceAreaUnit:existing.sourceAreaUnit||"SqFt", operationNature:String(p.operationNature ?? existing.operationNature), enquirySource:String(p.enquirySource ?? p.source ?? existing.enquirySource), projectClass:String(p.projectClass ?? p.project ?? existing.projectClass), status, engagementType, highPotential:p.highPotential===undefined?existing.highPotential:Boolean(p.highPotential), lastAction:String(p.lastAction ?? existing.lastAction), nextAction:String(p.nextAction ?? existing.nextAction), ageLabel:String(p.age ?? existing.ageLabel), proposalValue:Number(p.value ?? existing.proposalValue), proposalNo:p.proposalNo===undefined?existing.proposalNo:String(p.proposalNo||"")||null, updatedAt:new Date().toISOString() };
+  const [lead]=await db.update(leads).set(values).where(eq(leads.enqNo,enqNo)).returning();
   return Response.json({lead});
 }
 
