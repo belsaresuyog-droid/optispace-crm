@@ -235,7 +235,7 @@ function ReportsPanel({ leads, toast, openProposal = lead => toast(`${lead.propo
   </div>;
 }
 
-function FollowUpForm({ lead, close, save }: { lead: Lead; close: () => void; save: (data: { type: string; calls: number; discussion: string; outcome: string; status: Lead["status"]; engagementType:Lead["engagementType"]; highPotential:boolean; nextDate: string; nextTime:string; nextTask: string; priority: string; owner: string }) => void }) {
+function FollowUpForm({ lead, close, save }: { lead: Lead; close: () => void; save: (data: { type: string; calls: number; discussion: string; outcome: string; status: Lead["status"]; engagementType:Lead["engagementType"]; highPotential:boolean; nextDate: string; nextTime:string; nextTask: string; priority: string; owner: string }) => Promise<void> }) {
   const [type, setType] = useState("Phone call");
   const [calls, setCalls] = useState(1);
   const [discussion, setDiscussion] = useState("");
@@ -251,7 +251,9 @@ function FollowUpForm({ lead, close, save }: { lead: Lead; close: () => void; sa
   const [highPotential,setHighPotential]=useState(Boolean(lead.highPotential));
   const [timeline,setTimeline]=useState<any[]>([]);
   const [timelineLoading,setTimelineLoading]=useState(true);
+  const savingRef=useRef(false);
   const activityHydrated=useRef(false);
+  useEffect(()=>{const form=document.querySelector<HTMLFormElement>(".followup-page form");if(!form)return;const guard=(event:SubmitEvent)=>{if(savingRef.current){event.preventDefault();event.stopImmediatePropagation();return;}savingRef.current=true;const button=form.querySelector<HTMLButtonElement>('button[type="submit"]');if(button){button.disabled=true;button.textContent="Saving…";}window.setTimeout(()=>{savingRef.current=false;if(button){button.disabled=false;button.textContent="Save update & create follow-up";}},2500);};form.addEventListener("submit",guard,true);return()=>form.removeEventListener("submit",guard,true);},[]);
   useEffect(()=>{fetch("/api/users").then(response=>response.ok?response.json():Promise.reject()).then(data=>{const users=data.users||[];setOwners(users);const current=users.find((user:{id:number})=>user.id===data.currentUserId)||users[0];if(current)setOwner(String(current.id));}).catch(()=>setOwners([]));},[]);
   useEffect(()=>{setTimelineLoading(true);fetch(`/api/touchpoints?enqNo=${encodeURIComponent(lead.enq)}`).then(response=>response.ok?response.json():Promise.reject()).then(data=>setTimeline(data.touchpoints || [])).catch(()=>setTimeline([])).finally(()=>setTimelineLoading(false));},[lead.enq]);
   const formatEventDate=(value:string)=>value?new Intl.DateTimeFormat("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"numeric",minute:"2-digit",hour12:true}).format(new Date(value)):"Date not recorded";

@@ -42,12 +42,18 @@ export async function POST(request: Request) {
   const count = await getDb().select({ value: sql<number>`count(*)` }).from(touchpoints).where(eq(touchpoints.enqNo, enqNo));
   const allowed = ["PHONE", "VIDEO", "SITE_VISIT", "EMAIL", "NOTE"];
   const type = allowed.includes(String(p.type)) ? String(p.type) as "PHONE" | "VIDEO" | "SITE_VISIT" | "EMAIL" | "NOTE" : "NOTE";
+  const scheduledAt = String(p.scheduledAt ?? "") || null;
+  const duplicate = await env.DB.prepare(`SELECT id FROM touchpoints
+    WHERE enq_no=? AND type=? AND notes=? AND COALESCE(scheduled_at,'')=COALESCE(?,'')
+      AND datetime(created_at) >= datetime('now','-30 seconds')
+    ORDER BY id DESC LIMIT 1`).bind(enqNo,type,notes,scheduledAt).first();
+  if (duplicate) return Response.json({ touchpoint: duplicate, duplicate: true });
   const [touchpoint] = await getDb().insert(touchpoints).values({
     enqNo,
     type,
     sequenceNo: Number(count[0]?.value ?? 0) + 1,
     occurredAt: String(p.occurredAt ?? new Date().toISOString()),
-    scheduledAt: String(p.scheduledAt ?? "") || null,
+    scheduledAt,
     completed: true,
     notes,
   }).returning();
