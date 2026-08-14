@@ -9,7 +9,7 @@ export const leads = sqliteTable("leads", {
   products: text("products").notNull().default(""),
   plotArea: real("plot_area").notNull().default(0), builtUpAreaSqft: real("built_up_area_sqft").notNull(), sourceAreaUnit: text("source_area_unit").notNull().default("SqFt"),
   operationNature: text("operation_nature").notNull().default(""), enquirySource: text("enquiry_source").notNull(), projectClass: text("project_class").notNull(),
-  status: text("status", { enum: ["LEAD_RECEIVED", "ENGAGED", "PROPOSAL_SENT", "CONVERTED", "ON_HOLD", "REJECTED", "STOP"] }).notNull().default("LEAD_RECEIVED"),
+  status: text("status", { enum: ["LEAD_RECEIVED", "ENGAGED", "PROPOSAL_TO_SEND", "PROPOSAL_SENT", "CONVERTED", "ON_HOLD", "REJECTED", "STOP"] }).notNull().default("LEAD_RECEIVED"),
   engagementType: text("engagement_type", { enum: ["PHONE_CALL", "VIDEO_CALL", "ACTUAL_VISIT"] }),
   highPotential: integer("high_potential", { mode:"boolean" }).notNull().default(false),
   lastAction: text("last_action").notNull().default(""), nextAction: text("next_action").notNull().default(""), ageLabel: text("age_label").notNull().default(""),

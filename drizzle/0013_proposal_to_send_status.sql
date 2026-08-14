@@ -1,0 +1,2 @@
+-- Lead status values are stored as text in D1; no table rebuild is required.
+-- This migration documents the additional PROPOSAL_TO_SEND pipeline state.

@@ -4,7 +4,7 @@ import { leads } from "../../../db/schema";
 import { env } from "cloudflare:workers";
 
 const areaToSqft: Record<string, number> = { SqFt: 1, SqM: 10.7639104167, Acre: 43560, Guntha: 1089 };
-const statusMap: Record<string, "LEAD_RECEIVED" | "ENGAGED" | "PROPOSAL_SENT" | "CONVERTED" | "ON_HOLD" | "REJECTED" | "STOP"> = { "Lead Received":"LEAD_RECEIVED", "Engagement Initiated":"ENGAGED", "Proposal Sent":"PROPOSAL_SENT", "Converted":"CONVERTED", "On Hold":"ON_HOLD", "Rejected":"REJECTED", "STOP":"STOP" };
+const statusMap: Record<string, "LEAD_RECEIVED" | "ENGAGED" | "PROPOSAL_TO_SEND" | "PROPOSAL_SENT" | "CONVERTED" | "ON_HOLD" | "REJECTED" | "STOP"> = { "Lead Received":"LEAD_RECEIVED", "Engagement Initiated":"ENGAGED", "Proposal To Be Sent":"PROPOSAL_TO_SEND", "Proposal Sent":"PROPOSAL_SENT", "Converted":"CONVERTED", "On Hold":"ON_HOLD", "Rejected":"REJECTED", "STOP":"STOP" };
 let schemaReady=false;
 async function ensureFactoryDataSchema(){await env.DB.prepare(`CREATE TABLE IF NOT EXISTS factory_data (id integer PRIMARY KEY AUTOINCREMENT NOT NULL,enq_no text NOT NULL UNIQUE,payload_json text NOT NULL,created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,FOREIGN KEY (enq_no) REFERENCES leads(enq_no) ON DELETE CASCADE)`).run();}
 async function ensureTouchpointsSchema(){await env.DB.prepare(`CREATE TABLE IF NOT EXISTS touchpoints (id integer PRIMARY KEY AUTOINCREMENT NOT NULL,enq_no text NOT NULL,type text NOT NULL,sequence_no integer,scheduled_at text,occurred_at text,completed integer DEFAULT false NOT NULL,travel_voucher_shared integer DEFAULT false NOT NULL,notes text DEFAULT '' NOT NULL,created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,FOREIGN KEY (enq_no) REFERENCES leads(enq_no))`).run();}
