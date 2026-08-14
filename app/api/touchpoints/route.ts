@@ -59,3 +59,13 @@ export async function POST(request: Request) {
   }).returning();
   return Response.json({ touchpoint }, { status: 201 });
 }
+
+export async function PATCH(request:Request){
+  await ensureSchema();
+  const body=await request.json() as {id?:number;notes?:string};
+  const id=Number(body.id),notes=String(body.notes||"").trim();
+  if(!id||!notes)return Response.json({error:"Touchpoint id and activity details are required."},{status:400});
+  const touchpoint=await env.DB.prepare("UPDATE touchpoints SET notes=? WHERE id=? RETURNING id,enq_no enqNo,type,sequence_no sequenceNo,scheduled_at scheduledAt,occurred_at occurredAt,completed,notes,created_at createdAt").bind(notes,id).first();
+  if(!touchpoint)return Response.json({error:"Timeline record was not found."},{status:404});
+  return Response.json({touchpoint});
+}

@@ -57,8 +57,20 @@ export async function PATCH(request:Request){
 }
 
 export async function DELETE(request:Request){
-  await ensureSchema();const id=Number(new URL(request.url).searchParams.get("id"));if(!id)return Response.json({error:"Record id is required."},{status:400});
+  await ensureSchema();const url=new URL(request.url),id=Number(url.searchParams.get("id"));if(!id)return Response.json({error:"Record id is required."},{status:400});
+  const existing=await env.DB.prepare("SELECT id,enq_no enqNo,call_type callType FROM information_gathering WHERE id=?").bind(id).first<{id:number;enqNo:string;callType:string}>();
+  if(!existing)return Response.json({error:"Information record not found."},{status:404});
+  if(url.searchParams.get("resetLead")==="1"&&existing.callType==="AUDIO"){
+    const now=new Date().toISOString();
+    const results=await env.DB.batch([
+      env.DB.prepare("DELETE FROM information_gathering WHERE enq_no=?").bind(existing.enqNo),
+      env.DB.prepare("DELETE FROM visit_forms WHERE enq_no=?").bind(existing.enqNo),
+      env.DB.prepare("DELETE FROM factory_data WHERE enq_no=?").bind(existing.enqNo),
+      env.DB.prepare("DELETE FROM touchpoints WHERE enq_no=?").bind(existing.enqNo),
+      env.DB.prepare("UPDATE leads SET status='LEAD_RECEIVED',engagement_type=NULL,last_action='Lead received',next_action='Qualifying phone call',age_label='Just now',updated_at=? WHERE enq_no=? AND deleted_at IS NULL").bind(now,existing.enqNo),
+    ]);
+    return Response.json({deleted:true,reset:true,enqNo:existing.enqNo,deletedInformation:Number(results[0]?.meta?.changes||0),deletedVisits:Number(results[1]?.meta?.changes||0),deletedFactoryData:Number(results[2]?.meta?.changes||0),deletedTouchpoints:Number(results[3]?.meta?.changes||0)});
+  }
   const record=await env.DB.prepare("DELETE FROM information_gathering WHERE id=? RETURNING id").bind(id).first();
-  if(!record)return Response.json({error:"Information record not found."},{status:404});
   return Response.json({deleted:true,id});
 }
