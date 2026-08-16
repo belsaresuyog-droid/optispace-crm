@@ -39,6 +39,7 @@
 .travel-cost-grid{align-items:start}.travel-cost-grid label{grid-template-rows:auto 40px auto}.travel-cost-grid input{height:40px}.travel-cost-grid small{min-height:14px;font-size:9px;line-height:14px;color:#687b85}
 .proposal-page .terms{display:grid;grid-template-columns:105px minmax(0,1fr);column-gap:14px;row-gap:8px;padding:12px 14px;font-size:10px;line-height:1.35}.proposal-page .terms>b{align-self:start;margin:0;line-height:1.35}.proposal-page .terms>p{min-width:0;margin:0!important;overflow-wrap:anywhere}.proposal-page .signatures{bottom:76px;background:#fff;padding-top:4px}
 
+
 .invoice-note>b{margin:6px 0 12px}.invoice-payment{display:grid;gap:3px;background:#edf2f4;border-left:3px solid #334b59;padding:10px 12px;margin-bottom:11px}.invoice-payment small{color:#f2a144}.invoice-payment b{font:12px Arial;margin:0}.invoice-payment span{font-size:10px;color:#637680}.invoice-note p{margin:0}.invoice-footer{align-items:flex-end}.invoice-footer>span{font-size:10px;color:#70818a}.invoice-footer>div{text-align:right}.invoice-footer>div b{margin-top:22px;font:16px Georgia}
 
 /* Reporting */
