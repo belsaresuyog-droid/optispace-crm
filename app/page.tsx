@@ -20,6 +20,23 @@ const emptyLead:Lead={enq:"",company:"",contact:"",email:"",phone:"",city:"",web
 const nav = ["Dashboard", "Leads", "Information Gathering", "Proposals", "Invoices", "Travel Vouchers", "Reports", "Calendar", "Intelligence", "Social Analytics"];
 const navIcons:Record<string,string> = {Dashboard:"▦",Leads:"◎","Information Gathering":"◌","Visit Form":"▤",Proposals:"◫",Invoices:"₹","Travel Vouchers":"↗","Social Analytics":"◉",Reports:"◒",Calendar:"▣",Intelligence:"✦",Admin:"⚙"};
 const money = (n: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(n);
+async function downloadProposalPdf(proposalNo:string,toast:(message:string)=>void){
+  const pages=[...document.querySelectorAll<HTMLElement>(".proposal-document .proposal-page")];
+  if(!pages.length){toast("Proposal pages could not be found. Please reopen the proposal and retry.");return;}
+  toast("Preparing the A4 portrait PDF…");
+  try{
+    const [{default:html2canvas},{jsPDF}]=await Promise.all([import("html2canvas"),import("jspdf")]);
+    const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4",compress:true});
+    for(let index=0;index<pages.length;index++){
+      if(index>0)pdf.addPage("a4","portrait");
+      const page=pages[index];
+      const canvas=await html2canvas(page,{scale:2,useCORS:true,backgroundColor:"#ffffff",logging:false,width:page.offsetWidth,height:page.offsetHeight,windowWidth:page.scrollWidth,windowHeight:page.scrollHeight});
+      pdf.addImage(canvas.toDataURL("image/jpeg",.96),"JPEG",0,0,210,297,undefined,"FAST");
+    }
+    pdf.save(`${proposalNo.replace(/[^a-z0-9_-]/gi,"-") || "Optispace-Proposal"}.pdf`);
+    toast(`Proposal ${proposalNo} downloaded as a ${pages.length}-page A4 portrait PDF.`);
+  }catch(error){console.error(error);toast("PDF generation failed. Please retry after refreshing the proposal.");}
+}
 type DashboardPeriod = "week" | "month" | "year";
 const dashboardPeriodLabels:Record<DashboardPeriod,{label:string}> = {week:{label:"Weekly"},month:{label:"Monthly"},year:{label:"Yearly"}};
 const todayInIndia=()=>{const parts=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),value=(type:string)=>parts.find(part=>part.type===type)?.value||"";return `${value("year")}-${value("month")}-${value("day")}`;};
@@ -119,7 +136,7 @@ function ProposalEditor({ lead, close, toast, initial, saveRecord }: { lead: Lea
     </div>
     <div className="proposal-preview-wrap">
       {!editing && <button className="show-editor" onClick={() => setEditing(true)}>☰ Edit proposal</button>}
-      <div className="preview-toolbar"><div><b>Complete proposal preview</b><span>4 pages · All values update instantly</span></div>{saveRecord&&<button onClick={()=>saveRecord({details,projectType,scope,travel,paymentMilestones})}>Save proposal</button>}<button onClick={close}>Close</button><button onClick={() => { window.print(); toast(`Proposal ${details.proposalNo} prepared for print / PDF.`); }} className="primary">View / Download PDF</button></div>
+      <div className="preview-toolbar"><div><b>Complete proposal preview</b><span>4 pages · All values update instantly</span></div>{saveRecord&&<button onClick={()=>saveRecord({details,projectType,scope,travel,paymentMilestones})}>Save proposal</button>}<button onClick={close}>Close</button><button onClick={() => downloadProposalPdf(details.proposalNo,toast)} className="primary">Download A4 PDF</button></div>
       <article className="proposal-document">
         <section className="proposal-page page-cover"><ProposalHeader number={details.proposalNo} date={details.proposalDate} /><div className="cover-logo" aria-label="Solutions Optispace logo"><img src="/solutions-optispace-logo.png" alt="Solutions Optispace" width="626" height="196" loading="eager" decoding="sync" /></div><div className="cover-kicker">LEAN FACTORY BUILDING ©</div><h1>Designing flow.<br/>Building performance.</h1><p className="cover-intro">A tailored {projectType} proposal for</p><h2>{details.company}</h2><div className="cover-meta"><span><small>ENQUIRY</small>{lead.enq}</span><span><small>PROJECT CATEGORY</small>{projectType}</span><span><small>LOCATION</small>{lead.city}</span></div><div className="cover-statement">Pioneers of LFB© — a unique blend of Lean Manufacturing and Building Architecture</div></section>
         <section className="proposal-page"><ProposalHeader number={details.proposalNo} date={details.proposalDate} /><PageTitle number="01" title="Project understanding" eyebrow="CLIENT BRIEF" /><div className="address-block"><span>To</span><b>{details.company}</b><p>{details.address}</p><strong>Kind attention: {details.attention}</strong></div><p>Dear Sir,</p><p>Thank you for your enquiry{details.visitDate ? ` and the factory visit held on ${details.visitDate}` : ""}. Your requirement falls under our <b>{projectType}</b> category within the LFB© Lean Factory Building framework.</p><div className="brief-grid"><span><small>Plot area</small>{Number(details.plotArea || 0).toLocaleString("en-IN")} SqFt</span><span><small>Building type</small>{details.buildingType}</span><span><small>Building area</small>{area.toLocaleString("en-IN")} SqFt</span></div><ProposalText title="Products manufactured" text={details.products} /><ProposalText title="About the project" text={details.overview} /><ProposalText title="Pain areas" text={details.painAreas} /><ProposalText title="Expected outcome" text={details.expectations} /><DocumentFooter page="1" /></section>
