@@ -199,3 +199,13 @@
 
 /* Editable proposal payment schedule. */
 .payment-milestone-editor{display:grid;gap:10px}.payment-milestone-row{display:grid;grid-template-columns:38px minmax(145px,1.2fr) minmax(175px,1.5fr) 110px 135px auto;align-items:end;gap:8px;padding:11px;border:1px solid #d7e0e4;border-left:4px solid #e6a04a;background:#fff}.payment-step{align-self:center;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#385462;color:#fff;font-weight:700}.payment-milestone-row label{display:grid;gap:5px;color:#5a707b;font-size:10px;font-weight:700}.payment-milestone-row input{width:100%;min-height:38px;border:1px solid #cad6dc;border-radius:4px;background:#fff;padding:8px;color:#263b47}.payment-remove{min-height:38px;border:1px solid #dfb2b2;border-radius:4px;background:#fff7f7;color:#9b3737;font-weight:700;cursor:pointer}.payment-remove:disabled{opacity:.4;cursor:not-allowed}.payment-milestone-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}.payment-milestone-actions button{border:1px solid #4d6a79;border-radius:4px;background:#edf4f6;color:#355260;padding:9px 13px;font-weight:700;cursor:pointer}.payment-milestone-actions span{font-size:11px;font-weight:700}.payment-milestone-actions .complete{color:#387248}.payment-milestone-actions .warning{color:#a26918}.milestone-copy{display:inline-grid;gap:3px;margin-left:9px}.milestone-copy small{font-size:9px;font-weight:400;color:#627681}@media(max-width:1050px){.payment-milestone-row{grid-template-columns:38px 1fr 1fr}.payment-milestone-row .payment-remove{grid-column:3}.payment-milestone-actions{align-items:stretch;flex-direction:column}}
+
+/* Separate the client introduction from the project-understanding heading. */
+.proposal-page .address-block + p + p{margin-bottom:30px}
+
+/* Travel and stay are charged only with the advance-payment milestone. */
+.proposal-table tr.total + tr + tr:not(.grand),
+.proposal-table tr.total + tr + tr + tr:not(.grand){display:none}
+
+.proposal-table tr.advance-total{background:#eef3f5;font-weight:700;border-top:2px solid #9fb0b9}
+.proposal-table tr.travel-summary td{background:#f5f7f8;font-weight:700;color:#506570}
