@@ -202,6 +202,8 @@
 
 /* Separate the client introduction from the project-understanding heading. */
 .proposal-page .address-block + p + p{margin-bottom:30px}
+.proposal-introduction{margin:0 0 30px;font-size:11px;line-height:1.5}.proposal-introduction p{margin:0 0 10px}.proposal-introduction .proposal-signoff{width:max-content;max-width:50%;margin:14px auto 0 0;text-align:left}
+.proposal-introduction p:nth-child(2),.proposal-introduction p:nth-child(3){text-indent:0;text-align:left}
 
 /* Travel and stay are charged only with the advance-payment milestone. */
 .proposal-table tr.total + tr + tr:not(.grand),
@@ -209,3 +211,4 @@
 
 .proposal-table tr.advance-total{background:#eef3f5;font-weight:700;border-top:2px solid #9fb0b9}
 .proposal-table tr.travel-summary td{background:#f5f7f8;font-weight:700;color:#506570}
+.proposal-document .brief-grid{grid-template-columns:repeat(2,1fr)}
