@@ -24,18 +24,25 @@ async function downloadProposalPdf(proposalNo:string,toast:(message:string)=>voi
   const pages=[...document.querySelectorAll<HTMLElement>(".proposal-document .proposal-page")];
   if(!pages.length){toast("Proposal pages could not be found. Please reopen the proposal and retry.");return;}
   toast("Preparing the A4 portrait PDF…");
+  const proposalDocument=pages[0].closest<HTMLElement>(".proposal-document");
+  const previousDocumentStyle=proposalDocument?.getAttribute("style") ?? null;
   try{
     const [{default:html2canvas},{jsPDF}]=await Promise.all([import("html2canvas"),import("jspdf")]);
+    await document.fonts?.ready;
+    await Promise.all([...document.querySelectorAll<HTMLImageElement>(".proposal-document img")].map(image=>image.complete?Promise.resolve():new Promise<void>(resolve=>{image.addEventListener("load",()=>resolve(),{once:true});image.addEventListener("error",()=>resolve(),{once:true});})));
+    if(proposalDocument){proposalDocument.style.setProperty("transform","none","important");proposalDocument.style.setProperty("width","794px","important");proposalDocument.style.setProperty("margin","0","important");proposalDocument.style.setProperty("gap","0","important");}
+    await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
     const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4",compress:true});
     for(let index=0;index<pages.length;index++){
       if(index>0)pdf.addPage("a4","portrait");
       const page=pages[index];
-      const canvas=await html2canvas(page,{scale:2,useCORS:true,backgroundColor:"#ffffff",logging:false,width:page.offsetWidth,height:page.offsetHeight,windowWidth:page.scrollWidth,windowHeight:page.scrollHeight});
+      const canvas=await html2canvas(page,{scale:2,useCORS:true,backgroundColor:"#ffffff",logging:false,width:794,height:1123,windowWidth:1200,windowHeight:1123,scrollX:0,scrollY:0,onclone:clonedDocument=>{const clonedProposal=clonedDocument.querySelector<HTMLElement>(".proposal-document");if(clonedProposal){clonedProposal.style.setProperty("transform","none","important");clonedProposal.style.setProperty("width","794px","important");clonedProposal.style.setProperty("margin","0","important");clonedProposal.style.setProperty("gap","0","important");}clonedDocument.querySelectorAll<HTMLElement>(".proposal-page").forEach(clonedPage=>{clonedPage.style.transform="none";clonedPage.style.width="794px";clonedPage.style.height="1123px";});clonedDocument.querySelectorAll<HTMLElement>(".proposal-page *").forEach(element=>{element.style.fontKerning="none";element.style.fontVariantLigatures="none";});}});
       pdf.addImage(canvas.toDataURL("image/jpeg",.96),"JPEG",0,0,210,297,undefined,"FAST");
     }
     pdf.save(`${proposalNo.replace(/[^a-z0-9_-]/gi,"-") || "Optispace-Proposal"}.pdf`);
     toast(`Proposal ${proposalNo} downloaded as a ${pages.length}-page A4 portrait PDF.`);
   }catch(error){console.error(error);toast("PDF generation failed. Please retry after refreshing the proposal.");}
+  finally{if(proposalDocument){if(previousDocumentStyle===null)proposalDocument.removeAttribute("style");else proposalDocument.setAttribute("style",previousDocumentStyle);}}
 }
 type DashboardPeriod = "week" | "month" | "year";
 const dashboardPeriodLabels:Record<DashboardPeriod,{label:string}> = {week:{label:"Weekly"},month:{label:"Monthly"},year:{label:"Yearly"}};
