@@ -12,6 +12,9 @@ async function ensureSchema(){
     updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (enq_no) REFERENCES leads(enq_no)
   )`).run();
+  await env.DB.prepare(
+    "UPDATE proposal_documents SET payload_json=REPLACE(payload_json, ?, ?) WHERE INSTR(payload_json, ?) > 0",
+  ).bind("502000024663081", "50200002466308", "502000024663081").run();
   ready=true;
 }
 export async function GET(){
