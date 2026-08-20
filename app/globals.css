@@ -233,4 +233,13 @@
 .negotiation-discount{align-self:start}
 .negotiation-fields>label:not(.wide){grid-template-rows:32px auto auto}
 .negotiation-discount>label{grid-template-rows:32px auto}
+.negotiation-fields input[type="number"]{-moz-appearance:textfield}
+.negotiation-fields input[type="number"]::-webkit-outer-spin-button,.negotiation-fields input[type="number"]::-webkit-inner-spin-button{margin:0;-webkit-appearance:none}
+.payment-milestone-row,.payment-milestone-row label,.payment-milestone-row input{min-width:0}
+@media(max-width:1050px){.payment-milestone-row{grid-template-columns:38px minmax(0,1fr) minmax(0,1fr)}.payment-milestone-row input{max-width:100%;overflow:hidden;text-overflow:ellipsis}}
+@media(max-width:600px){.payment-milestone-row{grid-template-columns:38px minmax(0,1fr)}.payment-milestone-row .payment-step{grid-row:span 4}.payment-milestone-row .payment-remove{grid-column:2}}
+.payment-milestone-row{grid-template-columns:38px minmax(0,1fr)}
+.payment-milestone-row .payment-step{grid-row:span 4}
+.payment-milestone-row .payment-remove{grid-column:2}
+.negotiation-travel{display:none!important}
 @media(max-width:720px){[class="negotiation-fields"]{grid-template-columns:1fr}}
