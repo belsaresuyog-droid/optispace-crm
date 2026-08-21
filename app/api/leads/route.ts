@@ -50,6 +50,7 @@ export async function POST(request: Request) {
   const count = await db.select({ value: sql<number>`count(*)` }).from(leads);
   const enqNo = `E2627${String(Number(count[0]?.value ?? 0) + 1).padStart(3, "0")}`;
   const [lead] = await db.insert(leads).values({ enqNo, clientName: String(p.clientName ?? "").trim(), companyName: String(p.companyName ?? "").trim(), email, phone: String(p.phone ?? "").trim(), city: String(p.city ?? "").trim(), address: String(p.address ?? "").trim(), website:String(p.website ?? "").trim(), products:String(p.products ?? "").trim(), plotArea: Number(p.plotArea ?? 0), builtUpAreaSqft: Number((bua * areaToSqft[unit]).toFixed(2)), sourceAreaUnit: unit, operationNature: String(p.operationNature ?? "").trim(), enquirySource: String(p.enquirySource ?? "SMM"), projectClass: String(p.projectClass ?? "Greenfield"), status:statusMap[String(p.status)] || "LEAD_RECEIVED", highPotential:Boolean(p.highPotential), lastAction:String(p.lastAction ?? "Lead received"), nextAction:String(p.nextAction ?? "Qualifying phone call"), ageLabel:String(p.age ?? "Just now"), proposalValue:Number(p.value ?? 0), proposalNo:String(p.proposalNo ?? "") || null }).returning();
+  if(p.rawId){try{await env.DB.prepare("UPDATE raw_leads SET claimed_enq_no = ? WHERE id = ?").bind(enqNo,Number(p.rawId)).run();}catch{ /* raw lead table may not exist on older databases */ }}
   return Response.json({ lead }, { status: 201 });
 }
 
