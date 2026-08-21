@@ -5,6 +5,8 @@ import { env } from "cloudflare:workers";
 
 const areaToSqft: Record<string, number> = { SqFt: 1, SqM: 10.7639104167, Acre: 43560, Guntha: 1089 };
 const statusMap: Record<string, "LEAD_RECEIVED" | "ENGAGED" | "PROPOSAL_TO_SEND" | "PROPOSAL_SENT" | "CONVERTED" | "ON_HOLD" | "REJECTED" | "STOP"> = { "Lead Received":"LEAD_RECEIVED", "Engagement Initiated":"ENGAGED", "Proposal To Be Sent":"PROPOSAL_TO_SEND", "Proposal Sent":"PROPOSAL_SENT", "Converted":"CONVERTED", "On Hold":"ON_HOLD", "Rejected":"REJECTED", "STOP":"STOP" };
+const compact=(value:unknown)=>String(value??"").trim().toLowerCase().replace(/[^a-z0-9]/g,"");
+const phoneKey=(value:unknown)=>String(value??"").replace(/\D/g,"").slice(-10);
 let schemaReady=false;
 async function ensureFactoryDataSchema(){await env.DB.prepare(`CREATE TABLE IF NOT EXISTS factory_data (id integer PRIMARY KEY AUTOINCREMENT NOT NULL,enq_no text NOT NULL UNIQUE,payload_json text NOT NULL,created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,FOREIGN KEY (enq_no) REFERENCES leads(enq_no) ON DELETE CASCADE)`).run();}
 async function ensureTouchpointsSchema(){await env.DB.prepare(`CREATE TABLE IF NOT EXISTS touchpoints (id integer PRIMARY KEY AUTOINCREMENT NOT NULL,enq_no text NOT NULL,type text NOT NULL,sequence_no integer,scheduled_at text,occurred_at text,completed integer DEFAULT false NOT NULL,travel_voucher_shared integer DEFAULT false NOT NULL,notes text DEFAULT '' NOT NULL,created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,FOREIGN KEY (enq_no) REFERENCES leads(enq_no))`).run();}
@@ -18,7 +20,28 @@ export async function GET() {
 
 export async function POST(request: Request) {
   await ensureSchema();
-  const p = await request.json() as Record<string, string | number>;
+  const p = await request.json() as Record<string, any>;
+  if(Array.isArray(p.leads)){
+    const db=getDb();
+    const existing=await db.select().from(leads).where(isNull(leads.deletedAt)).limit(10000);
+    const emails=new Set(existing.map(row=>compact(row.email)).filter(Boolean));
+    const phones=new Set(existing.map(row=>phoneKey(row.phone)).filter(value=>value.length>=7));
+    const names=new Set(existing.map(row=>`${compact(row.companyName)}|${compact(row.clientName)}`));
+    let nextNumber=existing.reduce((max,row)=>Math.max(max,Number(String(row.enqNo).match(/(\d+)$/)?.[1]||0)),0)+1;
+    const created=[] as any[], duplicates=[] as number[], invalid=[] as Array<{index:number;reason:string}>;
+    for(const [index,item] of (p.leads as Array<Record<string,any>>).entries()){
+      const clientName=String(item.clientName??"").trim(),companyName=String(item.companyName??"").trim(),email=String(item.email??"").trim(),phone=String(item.phone??"").trim();
+      const bua=Number(item.builtUpArea??item.bua??0),unit=String(item.areaUnit??"SqFt");
+      if(!companyName||!clientName||!phone||!(bua>0)||!areaToSqft[unit]){invalid.push({index:index+1,reason:"Company, contact, phone and built-up area are required."});continue;}
+      if(email&&!/^\S+@\S+\.\S+$/.test(email)){invalid.push({index:index+1,reason:"Invalid email."});continue;}
+      const emailKey=compact(email),mobileKey=phoneKey(phone),nameKey=`${compact(companyName)}|${compact(clientName)}`;
+      if((emailKey&&emails.has(emailKey))||(mobileKey.length>=7&&phones.has(mobileKey))||names.has(nameKey)){duplicates.push(index+1);continue;}
+      const enqNo=`E2627${String(nextNumber++).padStart(3,"0")}`;
+      const [lead]=await db.insert(leads).values({enqNo,clientName,companyName,email,phone,city:String(item.city??"").trim(),address:String(item.address??"").trim(),website:String(item.website??"").trim(),products:String(item.products??"").trim(),plotArea:Number(item.plotArea??0),builtUpAreaSqft:Number((bua*areaToSqft[unit]).toFixed(2)),sourceAreaUnit:unit,operationNature:String(item.operationNature??"").trim(),enquirySource:String(item.enquirySource??"Website"),projectClass:String(item.projectClass??"Greenfield"),status:statusMap[String(item.status)]||"LEAD_RECEIVED",highPotential:Boolean(item.highPotential),lastAction:"Lead received",nextAction:"Qualifying phone call",ageLabel:"Just now",proposalValue:Number(item.value??0),proposalNo:null}).returning();
+      created.push(lead);if(emailKey)emails.add(emailKey);if(mobileKey.length>=7)phones.add(mobileKey);names.add(nameKey);
+    }
+    return Response.json({created:created.length,duplicates:duplicates.length,invalid:invalid.length,duplicateRows:duplicates,invalidRows:invalid,leads:created},{status:created.length||duplicates.length||invalid.length?201:400});
+  }
   const email = String(p.email ?? "").trim(); const bua = Number(p.builtUpArea); const unit = String(p.areaUnit ?? "SqFt");
   if (email && !/^\S+@\S+\.\S+$/.test(email)) return Response.json({ error: "Primary email is invalid." }, { status: 400 });
   if (!(bua > 0)) return Response.json({ error: "Built-up area is required and must be greater than zero." }, { status: 400 });
