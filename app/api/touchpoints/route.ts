@@ -69,3 +69,12 @@ export async function PATCH(request:Request){
   if(!touchpoint)return Response.json({error:"Timeline record was not found."},{status:404});
   return Response.json({touchpoint});
 }
+
+export async function DELETE(request:Request){
+  await ensureSchema();
+  const id=Number(new URL(request.url).searchParams.get("id"));
+  if(!id)return Response.json({error:"Activity record id is required."},{status:400});
+  const deleted=await env.DB.prepare("DELETE FROM touchpoints WHERE id=?").bind(id).run();
+  if(!Number(deleted.meta?.changes||0))return Response.json({error:"Activity record was not found."},{status:404});
+  return Response.json({deleted:true,id});
+}

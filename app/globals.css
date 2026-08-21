@@ -242,5 +242,10 @@
 .payment-milestone-row .payment-step{grid-row:span 4}
 .payment-milestone-row .payment-remove{grid-column:2}
 .negotiation-travel{display:none!important}
+.dashboard-priorities .panel-head .eyebrow,.dashboard-priorities .panel-head h2{display:none}
+.dashboard-overview{grid-template-columns:1fr}.dashboard-overview .activity{display:none}
+.dashboard-priorities{display:none!important}
+.dashboard-period-tabs{display:none!important}
+.phase-grid{align-items:stretch}.phase-grid .phase-card{height:780px;min-height:780px;overflow:hidden}
 .editor-total span{display:grid;gap:3px}.editor-total span small{font-size:10px;font-weight:400;color:#a26918}.manual-payable-input{max-width:220px;border:1px solid #cad6dc;border-radius:4px;padding:9px;font-weight:700;font-size:18px;text-align:right}
 @media(max-width:720px){[class="negotiation-fields"]{grid-template-columns:1fr}}
