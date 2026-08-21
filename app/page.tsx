@@ -558,7 +558,7 @@ export default function Home() {
   const [documentLeadEnq,setDocumentLeadEnq]=useState("");
   const [stakeholders, setStakeholders] = useState([{ name: "", designation: "", mobile: "" }]);
 
-  const filtered = useMemo(() => leads.filter(l => ((leadStatusFilter==="All") || (leadStatusFilter==="Proposal Stage" ? l.status === "Proposal To Be Sent" || l.status === "Proposal Sent" : l.status===leadStatusFilter)) && `${l.enq} ${l.company} ${l.contact} ${l.phone} ${l.city} ${l.website || ""} ${l.project} ${l.status}`.toLowerCase().includes(query.trim().toLowerCase())), [leads, query, leadStatusFilter]);
+  const filtered = useMemo(() => leads.filter(l => ((leadStatusFilter==="All") || (leadStatusFilter==="Proposal Stage" ? l.status === "Proposal To Be Sent" || l.status === "Proposal Sent" : l.status===leadStatusFilter)) && `${l.enq} ${l.company} ${l.contact} ${l.phone} ${l.city} ${l.website || ""} ${l.project} ${l.status}`.toLowerCase().includes(query.trim().toLowerCase())).sort((a,b)=>{const createdA=Date.parse(a.receivedAt||"")||Date.parse(a.updatedAt||"")||0;const createdB=Date.parse(b.receivedAt||"")||Date.parse(b.updatedAt||"")||0;return createdB-createdA;}), [leads, query, leadStatusFilter]);
   const leadPages=Math.max(1,Math.ceil(filtered.length/leadPageSize));
   const safeLeadPage=Math.min(leadPage,leadPages);
   const paginatedLeads=filtered.slice((safeLeadPage-1)*leadPageSize,safeLeadPage*leadPageSize);
