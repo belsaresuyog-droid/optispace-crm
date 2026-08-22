@@ -273,3 +273,4 @@
 .raw-pending{background:#fff0cf;color:#88621e}
 .raw-claimed{background:#e4f1e3;color:#356641}
 @media(max-width:760px){.raw-upload-controls{grid-template-columns:1fr}.raw-register .panel-head{align-items:stretch;flex-direction:column}.raw-search{max-width:none}}
+.discovery-lead-context{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid #d7e1e6;border-left:3px solid #6f9db3;background:#f1f6f8;color:#4f6672}.discovery-lead-context b{color:#294252;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}.discovery-lead-context span{font-size:.82rem}
