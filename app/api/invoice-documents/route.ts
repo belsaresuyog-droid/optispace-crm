@@ -42,8 +42,8 @@ function negotiatedPayload(payload:Record<string,any>,negotiation:any,sourcePayl
   return {...payload,details:{...(payload.details||{}),basic:Number(negotiation.negotiatedProposalValue)||0,...breakdown,commercialSource:"Negotiated proposal",proposalId:Number(negotiation.proposalId),negotiationUpdatedAt:negotiation.negotiationUpdatedAt}};
 }
 function applyPaymentStep(payload:Record<string,any>,sourcePayload:Record<string,any>,stepIndex:number){
-  const milestones=Array.isArray(sourcePayload.paymentMilestones)&&sourcePayload.paymentMilestones.length?sourcePayload.paymentMilestones:[{description:"Advance payment",timing:"With purchase order",percent:100}];
-  const index=Math.min(Math.max(Number.isFinite(stepIndex)?stepIndex:0,0),milestones.length-1),step=milestones[index]||milestones[0],totalBasic=Number(payload.details?.basic)||0,percent=Number(step.percent)||0;
+  const milestones=Array.isArray(sourcePayload.paymentMilestones)&&sourcePayload.paymentMilestones.length?sourcePayload.paymentMilestones:Array.isArray(sourcePayload.details?.paymentMilestones)&&sourcePayload.details.paymentMilestones.length?sourcePayload.details.paymentMilestones:[{description:"Advance payment",timing:"With purchase order",percent:100}];
+  const index=Math.min(Math.max(Number.isFinite(stepIndex)?stepIndex:0,0),milestones.length-1),step=milestones[index]||milestones[0],totalBasic=Number(payload.details?.basic)||0,percent=Number(String(step.percent??0).replace("%",""))||0;
   const details=payload.details||{},travelCost=Number(details.travelCost ?? details.travelStay ?? 0)||0,stayCost=Number(details.stayCost)||0;
   return {...payload,paymentStepIndex:index,paymentStepLabel:String(step.description||`Payment step ${index+1}`),paymentStepPercent:percent,details:{...details,basic:Number((totalBasic*percent/100).toFixed(2)),travelCost,stayCost,travelStay:travelCost+stayCost,activity:String(step.description||details.activity||"Project milestone"),paymentStepTiming:String(step.timing||"")}};
 }
