@@ -103,6 +103,7 @@ const scopeCatalog = [
 type PaymentMilestone = { id: string; description: string; timing: string; percent: number };
 
 function ProposalEditor({ lead, close, toast, initial, saveRecord }: { lead: Lead; close: () => void; toast: (message: string) => void; initial?:any; saveRecord?:(payload:any)=>void }) {
+  const defaultPainAreas = "Material movement, space utilisation, work-in-process visibility and provision for future expansion.";
   const [editing, setEditing] = useState(true);
   const [projectType, setProjectType] = useState<(typeof proposalTypes)[number]>(() => {
     if(proposalTypes.includes(initial?.projectType)) return initial.projectType;
@@ -136,7 +137,10 @@ function ProposalEditor({ lead, close, toast, initial, saveRecord }: { lead: Lea
         products: current.products && !current.products.startsWith("Products and manufacturing") ? current.products : (p.businessProducts||current.products),
         overview: current.overview && !current.overview.startsWith("The client is planning") ? current.overview : (p.projectUnderstanding||p.discussion||current.overview),
         expectations: current.expectations && !current.expectations.startsWith("A practical future-state") ? current.expectations : (p.successDefinition||current.expectations),
-        painAreas: current.painAreas && !current.painAreas.startsWith("Material movement") ? current.painAreas : (Array.isArray(p.videoChallenges)?p.videoChallenges.join(", "):current.painAreas),
+        // Only replace the untouched built-in placeholder. A real value may also
+        // begin with “Material movement”; checking with startsWith used to erase
+        // those saved edits whenever the information-gathering request resolved.
+        painAreas: current.painAreas === defaultPainAreas ? (Array.isArray(p.videoChallenges)?p.videoChallenges.join(", "):current.painAreas) : current.painAreas,
       }));
     }).catch(()=>{});
   },[lead.enq]);
