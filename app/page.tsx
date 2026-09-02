@@ -216,7 +216,28 @@ function ProposalEditor({ lead, close, toast, initial, saveRecord }: { lead: Lea
 function ProposalHeader({ number, date }: { number: string; date: string }) { return <header className="doc-header"><Mark compact /><div><span>Solutions Optispace</span><small>B1/02, Suvidha Dnyanganga Society, Pune 411041</small></div><section><small>PROPOSAL</small><b>{number}</b><em>{date}</em></section></header>; }
 function PageTitle({ number, title, eyebrow }: { number: string; title: string; eyebrow: string }) { return <div className="page-title"><span>{number}</span><div><small>{eyebrow}</small><h2>{title}</h2></div></div>; }
 function ProposalBand({ title }: { title: string }) { return <h3 className="proposal-band">{title}</h3>; }
-function ProposalText({ title, text }: { title: string; text: string }) { return <div className="proposal-text"><b>{title}</b><p>{text}</p></div>; }
+function ProposalText({ title, text }: { title: string; text: string }) {
+  // Narrative fields are often entered as one point per line (or with inline
+  // "•" separators). Convert those markers to a real list so the editor and
+  // the generated PDF use the same readable point-wise layout.
+  const value = String(text || "");
+  const hasPoints = /(^|\n)\s*(?:[•*-]|\d+[.)])\s*|•/.test(value);
+  if (!hasPoints) return <div className="proposal-text"><b>{title}</b><div className="proposal-text-body"><p>{value}</p></div></div>;
+  const intro: string[] = [];
+  const points: string[] = [];
+  value.split(/\r?\n/).forEach(rawLine => {
+    const line = rawLine.trim();
+    if (!line) return;
+    const parts = line.split(/\s*[•]\s*/).map(part => part.trim()).filter(Boolean);
+    parts.forEach((part, index) => {
+      const cleaned = part.replace(/^[-*]\s+|^\d+[.)]\s+/, "").trim();
+      if (!cleaned) return;
+      const marked = index > 0 || /^[•*-]\s+|^\d+[.)]\s+/.test(part);
+      (marked ? points : intro).push(cleaned);
+    });
+  });
+  return <div className="proposal-text"><b>{title}</b><div className="proposal-text-body">{intro.map((line, index) => <p key={`intro-${index}`}>{line}</p>)}{points.length > 0 && <ul className="proposal-bullets">{points.map((point, index) => <li key={`point-${index}`}>{point}</li>)}</ul>}</div></div>;
+}
 function DocumentFooter({ page }: { page: string }) { return <footer className="doc-footer"><span>Solutions Optispace · Confidential proposal</span><b>{page} / 5</b></footer>; }
 
 function InvoiceEditor({ lead, mode, setMode, close, openStage, toast, initial, saveRecord }: { lead: Lead; mode: "Proforma" | "Tax"; setMode: (mode: "Proforma" | "Tax") => void; close: () => void; openStage: (stage: "lead" | "visit" | "proposal") => void; toast: (message: string) => void; initial?:any; saveRecord?:(payload:any,mode:"Proforma"|"Tax")=>void }) {

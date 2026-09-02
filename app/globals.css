@@ -240,6 +240,7 @@
 .payment-milestone-row,.payment-milestone-row label,.payment-milestone-row input{min-width:0}
 @media(max-width:1050px){.payment-milestone-row{grid-template-columns:38px minmax(0,1fr) minmax(0,1fr)}.payment-milestone-row input{max-width:100%;overflow:hidden;text-overflow:ellipsis}}
 @media(max-width:600px){.payment-milestone-row{grid-template-columns:38px minmax(0,1fr)}.payment-milestone-row .payment-step{grid-row:span 4}.payment-milestone-row .payment-remove{grid-column:2}}
+.proposal-text-body{min-width:0;color:#52656f}.proposal-text-body p{margin:0 0 6px;color:#52656f;white-space:pre-wrap}.proposal-text-body p:last-child{margin-bottom:0}.proposal-bullets{margin:4px 0 0;padding-left:18px;display:grid;gap:4px;color:#52656f}.proposal-bullets li{padding-left:2px}
 .payment-milestone-row{grid-template-columns:38px minmax(0,1fr)}
 .payment-milestone-row .payment-step{grid-row:span 4}
 .payment-milestone-row .payment-remove{grid-column:2}
