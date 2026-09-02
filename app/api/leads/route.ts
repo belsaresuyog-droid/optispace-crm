@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     const emails=new Set(existing.map(row=>compact(row.email)).filter(Boolean));
     const phones=new Set(existing.map(row=>phoneKey(row.phone)).filter(value=>value.length>=7));
     const names=new Set(existing.map(row=>`${compact(row.companyName)}|${compact(row.clientName)}`));
+    const companies=new Set(existing.map(row=>compact(row.companyName)).filter(Boolean));
     let nextNumber=existing.reduce((max,row)=>Math.max(max,Number(String(row.enqNo).match(/(\d+)$/)?.[1]||0)),0)+1;
     const created=[] as any[], duplicates=[] as number[], invalid=[] as Array<{index:number;reason:string}>;
     for(const [index,item] of (p.leads as Array<Record<string,any>>).entries()){
@@ -35,10 +36,10 @@ export async function POST(request: Request) {
       if(!companyName||!clientName||!phone||!(bua>0)||!areaToSqft[unit]){invalid.push({index:index+1,reason:"Company, contact, phone and built-up area are required."});continue;}
       if(email&&!/^\S+@\S+\.\S+$/.test(email)){invalid.push({index:index+1,reason:"Invalid email."});continue;}
       const emailKey=compact(email),mobileKey=phoneKey(phone),nameKey=`${compact(companyName)}|${compact(clientName)}`;
-      if((emailKey&&emails.has(emailKey))||(mobileKey.length>=7&&phones.has(mobileKey))||names.has(nameKey)){duplicates.push(index+1);continue;}
+      if(companies.has(compact(companyName))||(emailKey&&emails.has(emailKey))||(mobileKey.length>=7&&phones.has(mobileKey))||names.has(nameKey)){duplicates.push(index+1);continue;}
       const enqNo=`E2627${String(nextNumber++).padStart(3,"0")}`;
       const [lead]=await db.insert(leads).values({enqNo,clientName,companyName,email,phone,city:String(item.city??"").trim(),address:String(item.address??"").trim(),website:String(item.website??"").trim(),products:String(item.products??"").trim(),plotArea:Number(item.plotArea??0),builtUpAreaSqft:Number((bua*areaToSqft[unit]).toFixed(2)),sourceAreaUnit:unit,operationNature:String(item.operationNature??"").trim(),enquirySource:String(item.enquirySource??"Website"),projectClass:String(item.projectClass??"Greenfield"),status:statusMap[String(item.status)]||"LEAD_RECEIVED",highPotential:Boolean(item.highPotential),lastAction:"Lead received",nextAction:"Qualifying phone call",ageLabel:"Just now",proposalValue:Number(item.value??0),proposalNo:null}).returning();
-      created.push(lead);if(emailKey)emails.add(emailKey);if(mobileKey.length>=7)phones.add(mobileKey);names.add(nameKey);
+      created.push(lead);if(emailKey)emails.add(emailKey);if(mobileKey.length>=7)phones.add(mobileKey);names.add(nameKey);companies.add(compact(companyName));
     }
     return Response.json({created:created.length,duplicates:duplicates.length,invalid:invalid.length,duplicateRows:duplicates,invalidRows:invalid,leads:created},{status:created.length||duplicates.length||invalid.length?201:400});
   }
@@ -47,9 +48,13 @@ export async function POST(request: Request) {
   if (!(bua > 0)) return Response.json({ error: "Built-up area is required and must be greater than zero." }, { status: 400 });
   if (!areaToSqft[unit]) return Response.json({ error: "Area unit must be SqFt, SqM, Acre, or Guntha." }, { status: 400 });
   const db = getDb();
+  const companyName = String(p.companyName ?? "").trim();
+  if (!companyName) return Response.json({ error: "Company name is required." }, { status: 400 });
+  const activeLeads = await db.select({ companyName: leads.companyName }).from(leads).where(isNull(leads.deletedAt)).limit(10000);
+  if (activeLeads.some(row => compact(row.companyName) === compact(companyName))) return Response.json({ error: "A lead with this company name already exists." }, { status: 409 });
   const count = await db.select({ value: sql<number>`count(*)` }).from(leads);
   const enqNo = `E2627${String(Number(count[0]?.value ?? 0) + 1).padStart(3, "0")}`;
-  const [lead] = await db.insert(leads).values({ enqNo, clientName: String(p.clientName ?? "").trim(), companyName: String(p.companyName ?? "").trim(), email, phone: String(p.phone ?? "").trim(), city: String(p.city ?? "").trim(), address: String(p.address ?? "").trim(), website:String(p.website ?? "").trim(), products:String(p.products ?? "").trim(), plotArea: Number(p.plotArea ?? 0), builtUpAreaSqft: Number((bua * areaToSqft[unit]).toFixed(2)), sourceAreaUnit: unit, operationNature: String(p.operationNature ?? "").trim(), enquirySource: String(p.enquirySource ?? "SMM"), projectClass: String(p.projectClass ?? "Greenfield"), status:statusMap[String(p.status)] || "LEAD_RECEIVED", highPotential:Boolean(p.highPotential), lastAction:String(p.lastAction ?? "Lead received"), nextAction:String(p.nextAction ?? "Qualifying phone call"), ageLabel:String(p.age ?? "Just now"), proposalValue:Number(p.value ?? 0), proposalNo:String(p.proposalNo ?? "") || null }).returning();
+  const [lead] = await db.insert(leads).values({ enqNo, clientName: String(p.clientName ?? "").trim(), companyName, email, phone: String(p.phone ?? "").trim(), city: String(p.city ?? "").trim(), address: String(p.address ?? "").trim(), website:String(p.website ?? "").trim(), products:String(p.products ?? "").trim(), plotArea: Number(p.plotArea ?? 0), builtUpAreaSqft: Number((bua * areaToSqft[unit]).toFixed(2)), sourceAreaUnit: unit, operationNature: String(p.operationNature ?? "").trim(), enquirySource: String(p.enquirySource ?? "SMM"), projectClass: String(p.projectClass ?? "Greenfield"), status:statusMap[String(p.status)] || "LEAD_RECEIVED", highPotential:Boolean(p.highPotential), lastAction:String(p.lastAction ?? "Lead received"), nextAction:String(p.nextAction ?? "Qualifying phone call"), ageLabel:String(p.age ?? "Just now"), proposalValue:Number(p.value ?? 0), proposalNo:String(p.proposalNo ?? "") || null }).returning();
   if(p.rawId){try{await env.DB.prepare("UPDATE raw_leads SET claimed_enq_no = ? WHERE id = ?").bind(enqNo,Number(p.rawId)).run();}catch{ /* raw lead table may not exist on older databases */ }}
   return Response.json({ lead }, { status: 201 });
 }
@@ -61,13 +66,17 @@ export async function PATCH(request:Request){
   const db=getDb();
   const [existing]=await db.select().from(leads).where(eq(leads.enqNo,enqNo)).limit(1);
   if(!existing||existing.deletedAt)return Response.json({error:"Lead was not found."},{status:404});
+  const requestedCompany=String(p.companyName ?? p.company ?? existing.companyName).trim();
+  if(!requestedCompany) return Response.json({error:"Company name is required."},{status:400});
+  const sameCompany=await db.select({enqNo:leads.enqNo,companyName:leads.companyName}).from(leads).where(isNull(leads.deletedAt)).limit(10000);
+  if(sameCompany.some(row=>row.enqNo!==enqNo&&compact(row.companyName)===compact(requestedCompany))) return Response.json({error:"A lead with this company name already exists."},{status:409});
   const status=statusMap[String(p.status)] || existing.status;
   const requestedEngagement=String(p.engagementType||"").trim();
   const validEngagement=["PHONE_CALL","VIDEO_CALL","ACTUAL_VISIT"].includes(requestedEngagement)
     ? requestedEngagement as "PHONE_CALL"|"VIDEO_CALL"|"ACTUAL_VISIT"
     : null;
   const engagementType=status==="ENGAGED"?(validEngagement||existing.engagementType||null):null;
-  const values={ clientName:String(p.clientName ?? p.contact ?? existing.clientName).trim(), companyName:String(p.companyName ?? p.company ?? existing.companyName).trim(), email:String(p.email ?? existing.email).trim(), phone:String(p.phone ?? existing.phone).trim(), city:String(p.city ?? existing.city).trim(), address:String(p.address ?? existing.address), website:String(p.website ?? existing.website).trim(), products:String(p.products ?? existing.products).trim(), plotArea:Number(p.plotArea ?? existing.plotArea), builtUpAreaSqft:Number(p.builtUpArea ?? p.bua ?? existing.builtUpAreaSqft), sourceAreaUnit:existing.sourceAreaUnit||"SqFt", operationNature:String(p.operationNature ?? existing.operationNature), enquirySource:String(p.enquirySource ?? p.source ?? existing.enquirySource), projectClass:String(p.projectClass ?? p.project ?? existing.projectClass), status, engagementType, highPotential:p.highPotential===undefined?existing.highPotential:Boolean(p.highPotential), lastAction:String(p.lastAction ?? existing.lastAction), nextAction:String(p.nextAction ?? existing.nextAction), ageLabel:String(p.age ?? existing.ageLabel), proposalValue:Number(p.value ?? existing.proposalValue), proposalNo:p.proposalNo===undefined?existing.proposalNo:String(p.proposalNo||"")||null, updatedAt:new Date().toISOString() };
+  const values={ clientName:String(p.clientName ?? p.contact ?? existing.clientName).trim(), companyName:requestedCompany, email:String(p.email ?? existing.email).trim(), phone:String(p.phone ?? existing.phone).trim(), city:String(p.city ?? existing.city).trim(), address:String(p.address ?? existing.address), website:String(p.website ?? existing.website).trim(), products:String(p.products ?? existing.products).trim(), plotArea:Number(p.plotArea ?? existing.plotArea), builtUpAreaSqft:Number(p.builtUpArea ?? p.bua ?? existing.builtUpAreaSqft), sourceAreaUnit:existing.sourceAreaUnit||"SqFt", operationNature:String(p.operationNature ?? existing.operationNature), enquirySource:String(p.enquirySource ?? p.source ?? existing.enquirySource), projectClass:String(p.projectClass ?? p.project ?? existing.projectClass), status, engagementType, highPotential:p.highPotential===undefined?existing.highPotential:Boolean(p.highPotential), lastAction:String(p.lastAction ?? existing.lastAction), nextAction:String(p.nextAction ?? existing.nextAction), ageLabel:String(p.age ?? existing.ageLabel), proposalValue:Number(p.value ?? existing.proposalValue), proposalNo:p.proposalNo===undefined?existing.proposalNo:String(p.proposalNo||"")||null, updatedAt:new Date().toISOString() };
   const [lead]=await db.update(leads).set(values).where(eq(leads.enqNo,enqNo)).returning();
   return Response.json({lead});
 }

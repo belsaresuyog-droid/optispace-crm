@@ -18,6 +18,7 @@ const { d1, r2 } = hostingConfig;
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 
 const localBindingConfig = {
+  name: "optispace-crm",
   main: "./worker/index.ts",
   // Production OAuth and other runtime values are managed in the Cloudflare
   // dashboard. Preserve them when Wrangler publishes a new Git build.
