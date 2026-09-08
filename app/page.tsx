@@ -135,7 +135,7 @@ function ProposalEditor({ lead, close, toast, initial, saveRecord }: { lead: Lea
   const [travel, setTravel] = useState({ km: Number(initial?.negotiated?.travel?.km ?? initial?.travel?.km) || 0, kmRate: Number(initial?.negotiated?.travel?.kmRate ?? initial?.travel?.kmRate) || 20, cabCost: Number(initial?.negotiated?.travel?.cabCost ?? initial?.travel?.cabCost) || ((Number(initial?.travel?.cabKm) || 0) * (Number(initial?.travel?.cabRate) || 0)), days: Number(initial?.negotiated?.travel?.days ?? initial?.travel?.days) || 0, people: Number(initial?.negotiated?.travel?.people ?? initial?.travel?.people) || 2, stayRate: Number(initial?.negotiated?.travel?.stayRate ?? initial?.travel?.stayRate) || 5000 });
   const [gstEnabled, setGstEnabled] = useState(initial?.gstEnabled !== false);
   const [manualPayable, setManualPayable] = useState<number>(Number(initial?.manualPayable)||0);
-  useEffect(()=>{if(initial?.negotiated?.area)setDetails(current=>({...current,buildingArea:String(initial.negotiated.area)}));},[initial?.negotiated?.area]);
+  useEffect(()=>{if(initial?.negotiated?.area)setDetails(current=>({...current,[projectType === "Green Field" ? "plotArea" : "buildingArea"]:String(initial.negotiated.area)}));},[initial?.negotiated?.area,projectType]);
   const updateProjectType=async(type:(typeof proposalTypes)[number])=>{
     setProjectType(type);
     await fetch("/api/leads",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({enqNo:lead.enq,project:type})}).catch(()=>{});
@@ -166,7 +166,12 @@ function ProposalEditor({ lead, close, toast, initial, saveRecord }: { lead: Lea
     { id: "payment-1", description: "Advance payment", timing: "With purchase order", percent: 75 },
     { id: "payment-2", description: "Final payment", timing: "Before delivery of final draft", percent: 25 },
   ]);
-  const area = Number(details.buildingArea) || 0;
+  // Green Field proposals are priced on the plot area; all other categories
+  // continue to use the building area. Keep a fallback for older records
+  // that may not have the newly required field populated yet.
+  const area = projectType === "Green Field"
+    ? (Number(details.plotArea) || Number(details.buildingArea) || 0)
+    : (Number(details.buildingArea) || Number(details.plotArea) || 0);
   const lines = scopeCatalog.filter(([id]) => scope[id].enabled).map(([id, label]) => ({ id, label, rate: scope[id].rate, amount: area * scope[id].rate }));
   const basic = Number(initial?.negotiated?.proposalValue)>0 ? Number(initial.negotiated.proposalValue) : lines.reduce((sum, line) => sum + line.amount, 0);
   const gst = gstEnabled ? basic * .18 : 0; const travelCost = travel.cabCost > 0 ? travel.cabCost : travel.km * travel.kmRate; const stayCost = travel.days * travel.people * travel.stayRate; const payable = !gstEnabled && manualPayable>0 ? manualPayable : Number(initial?.negotiated?.afterTax)>0 ? Number(initial.negotiated.afterTax) + travelCost + stayCost : basic + gst + travelCost + stayCost;
@@ -505,7 +510,10 @@ const proposalLeadStatusClass=(status?:Lead["status"])=>status==="Lead Received"
 
 function proposalCommercials(row:ProposalRecord,lead?:Lead){
   const payload=row.payload||{},details=payload.details||{},scope=payload.scope||{},travel=payload.travel||{};
-  const area=Number(details.buildingArea)||lead?.bua||0;
+  const projectType=String(payload.projectType||lead?.project||"");
+  const area=projectType === "Green Field"
+    ? (Number(details.plotArea)||Number(details.buildingArea)||lead?.bua||0)
+    : (Number(details.buildingArea)||Number(details.plotArea)||lead?.bua||0);
   const scopeValue=Object.values(scope as Record<string,{enabled?:boolean;rate?:number}>).reduce((sum,item)=>sum+(item?.enabled?Number(item.rate)||0:0),0);
   const proposalValue=area*scopeValue||lead?.value||0;
   const legacyCabCost=(Number(travel.cabKm)||0)*(Number(travel.cabRate)||0);
