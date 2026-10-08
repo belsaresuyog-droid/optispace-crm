@@ -285,3 +285,5 @@
 .client-logo-page .client-logo-collage{position:static;margin-top:80px;background:#fff;padding:12px;color:#304653}.client-logo-page .client-logo-collage img{height:auto;max-height:650px;object-fit:contain}
 
 .proposal-location-field input{color:#263b47!important;background:#fff!important}
+
+.page-cover .cover-location-meta{color:#263b47;background:#fff;padding:6px 8px;border-radius:3px;align-self:start}.page-cover .cover-location-meta small{color:#71818a}
